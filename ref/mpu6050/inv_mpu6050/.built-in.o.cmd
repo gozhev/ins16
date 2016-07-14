@@ -1,0 +1,1 @@
+cmd_drivers/iio/imu/inv_mpu6050/built-in.o :=  rm -f drivers/iio/imu/inv_mpu6050/built-in.o; /home/student/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-ar rcsD drivers/iio/imu/inv_mpu6050/built-in.o
