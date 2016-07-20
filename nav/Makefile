@@ -1,26 +1,26 @@
-TARGET = nav
-CSRCS = nav.c 
+TARGET := nav
+CSRCS := nav.c 
+
+CFLAGS := -lm
 
 REMOTE_HST := 192.168.0.3
 REMOTE_USR := root
 REMOTE_DIR := /root/dvlp/nav
 
-COMPILE = CROSS
+ifneq ($(PLATFORM),SELF)
 
-ifeq ($(COMPILE),CROSS)
-
-CROSS = /home/student/dvlp/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-
+CROSS := /home/student/dvlp/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-
 
 else
 
-CROSS = 
+CROSS := 
 
 endif
 
 all: $(TARGET)
 
 $(TARGET): $(CSRCS)
-	$(CROSS)gcc -o $(TARGET) $(CSRCS)
+	$(CROSS)gcc $(CFLAGS) -o $(TARGET) $(CSRCS)
 
 clean:
 	rm -f $(TARGET)
