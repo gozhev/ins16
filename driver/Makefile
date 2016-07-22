@@ -1,5 +1,5 @@
 TARGET := fast-mpu6050.ko
-SRCS := fast_mpu6050.c
+CSRCS := fast_mpu6050.c
 
 COMPILE := CROSS
 
@@ -9,7 +9,7 @@ REMOTE_DIR := /lib/modules/4.4.14+/extra
 
 MODULE_BASENAME := $(TARGET:%.ko=%)
 obj-m += $(MODULE_BASENAME).o
-$(MODULE_BASENAME)-objs := $(SRCS:%.c=%.o)
+$(MODULE_BASENAME)-objs := $(CSRCS:%.c=%.o)
 
 ifeq ($(COMPILE),CROSS)
 
@@ -23,13 +23,13 @@ PARAM :=
 
 endif
 
-all: modules
+all: $(TARGET)
 
-modules:
+$(TARGET): $(CSRCS)
 	make $(PARAM) -C $(KDIR) M=$(PWD) modules
 
 clean:
 	make $(PARAM) -C $(KDIR) M=$(PWD) clean
 
-upload:
+upload: $(TARGET)
 	scp $(TARGET) $(REMOTE_USR)@$(REMOTE_HST):$(REMOTE_DIR)

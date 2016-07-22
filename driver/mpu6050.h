@@ -168,10 +168,25 @@
 #define MPU6050_ACONFIG_ACCEL_HPF_BIT       0 /* OK */
 #define MPU6050_ACONFIG_ACCEL_HPF_LENGTH    3
 
-#define MPU6050_ACCEL_FS_2          0x00
-#define MPU6050_ACCEL_FS_4          0x01
-#define MPU6050_ACCEL_FS_8          0x02
-#define MPU6050_ACCEL_FS_16         0x03
+
+/* Pertains for Revision D chips only. 
+    See package marking:
+    -------------
+   | INVENSENSE  |
+   |  MPU-6050   |
+   |             |
+   | DIY633 - E1 |
+   |             |      Production date: YYWW
+   | EL  1210  C | <--- Revision letter: C
+    -------------  */
+#define MPU6050_REV_D_ACCEL_FS_2          0x00
+#define MPU6050_REV_D_ACCEL_FS_4          0x01
+#define MPU6050_REV_D_ACCEL_FS_8          0x02 /* 8g (4096 LSB/g) */
+#define MPU6050_REV_D_ACCEL_FS_16         0x03
+/* Revision C: */
+#define MPU6050_REV_C_ACCEL_FS_8          0x01 /* 8g (4096 LSB/g) */
+#define MPU6050_REV_C_ACCEL_FS_4          0x00 /* 4g (8192 LSB/g) */
+
 
 #define MPU6050_DHPF_RESET          0x00
 #define MPU6050_DHPF_5              0x01

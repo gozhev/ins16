@@ -51,4 +51,4 @@ __attribute__((section(".modinfo"))) =
 
 MODULE_ALIAS("i2c:mpu6050");
 
-MODULE_INFO(srcversion, "9F707954BC652CB354B0BA4");
+MODULE_INFO(srcversion, "BBF0E77A795EA1097049F88");

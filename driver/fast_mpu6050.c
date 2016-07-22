@@ -114,21 +114,21 @@ static int configure_chip (const struct i2c_client *client)
 	int rc;
     uint8_t reg, byte;
 
-	/* set low-pass filter to 20Hz */
+	/* set low-pass filter */
     reg = MPU6050_RA_CONFIG;
-    byte = 0 | MPU6050_DLPF_BW_20;
+    byte = 0 | MPU6050_DLPF_BW_98;
     rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
 	if (rc) return rc;
 	
     /* Set the full scale range for the gyroscope. */
     reg = MPU6050_RA_GYRO_CONFIG;
-    byte = 0 | MPU6050_GYRO_FS_1000 << MPU6050_GCONFIG_FS_SEL_BIT;
+    byte = 0 | MPU6050_GYRO_FS_500 << MPU6050_GCONFIG_FS_SEL_BIT;
     rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
 	if (rc) return rc;
 
     /* Set the full scale range for the accelerometer. */
     reg = MPU6050_RA_ACCEL_CONFIG;
-    byte = 0 | MPU6050_ACCEL_FS_8 << MPU6050_ACONFIG_AFS_SEL_BIT;
+    byte = 0 | MPU6050_REV_C_ACCEL_FS_4 << MPU6050_ACONFIG_AFS_SEL_BIT;
     rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
 	if (rc) return rc;
     
