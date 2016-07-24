@@ -7,7 +7,7 @@ REMOTE_HST := 192.168.0.3
 REMOTE_USR := root
 REMOTE_DIR := /root/dvlp/nav
 
-ifneq ($(PLATFORM),SELF)
+ifneq ($(PLATFORM),THIS)
 
 CROSS := /home/student/dvlp/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-
 

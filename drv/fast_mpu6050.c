@@ -77,36 +77,39 @@ static int reset_chip (const struct i2c_client *client)
 	int rc;
     uint8_t reg, byte;
 
-	/* reset to make sure previous state are not there */
+    ///* reset to make sure previous state are not there */
+    //reg = MPU6050_RA_PWR_MGMT_1;
+    //byte = (1 << MPU6050_PWR1_DEVICE_RESET_BIT);
+    //rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
+    //if (rc) return rc;
+
+    //msleep (MPU6050_POWER_UP_TIME);
+
+    ///* toggle power state. After reset, the sleep bit could be on
+    //    or off depending on the OTP settings. Toggling power would
+    //    make it in a definite state as well as making the hardware
+    //    state align with the software state */
+    //reg = MPU6050_RA_PWR_MGMT_1;
+    //byte = (1 << MPU6050_PWR1_SLEEP_BIT);
+    //rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
+    //if (rc) return rc;
+
     reg = MPU6050_RA_PWR_MGMT_1;
-    byte = (1 << MPU6050_PWR1_DEVICE_RESET_BIT);
-    rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
-	if (rc) return rc;
-
-	msleep (MPU6050_POWER_UP_TIME);
-
-	/* toggle power state. After reset, the sleep bit could be on
-		or off depending on the OTP settings. Toggling power would
-		make it in a definite state as well as making the hardware
-		state align with the software state */
-    byte = (1 << MPU6050_PWR1_SLEEP_BIT);
-    rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
-	if (rc) return rc;
-
     byte = 0;
     rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
-	if (rc) return rc;
-   
+    if (rc) return rc;
+
     msleep (MPU6050_TEMP_UP_TIME);
 
-    /* switch clock needs to be careful. Only when gyro is on, can
-	    clock source be switched to gyro. Otherwise, it must be set to
-	    internal clock */
-    byte = 0 | MPU6050_CLOCK_PLL_XGYRO;
-    rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
-	if (rc) return rc;
+    ///* switch clock needs to be careful. Only when gyro is on, can
+    //    clock source be switched to gyro. Otherwise, it must be set to
+    //    internal clock */
+    //reg = MPU6050_RA_PWR_MGMT_1;
+    //byte = 0 | MPU6050_CLOCK_PLL_XGYRO;
+    //rc = i2c_smbus_write_i2c_block_data (client, reg, 1, &byte);
+    //if (rc) return rc;
 
-	return 0;
+    return 0;
 }
 
 static int configure_chip (const struct i2c_client *client)

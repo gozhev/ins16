@@ -14,192 +14,61 @@
 #define SAMPLING_FREQUENCY 1000
 #define CHRDEV "/dev/mpu6050"
 
+#define PHYS_G 9.80665 /* acceleration of gravity in meters per second squared */
+/* Full Scale Ranges of Sensors */
+#define ACCEL_FS 2.0 /* acceleration(s) of gravity */
+#define GYRO_FS 1000.0 /* degrees per sec */
 
-#define PHYS_G 9.80665
-#define LSB_PER_G 8192.0
+/* convert raw values to SI */
+#define A_RAW_TO_SI(a) ( PHYS_G * ACCEL_FS * ((double)a / 32768.0) )
+#define W_RAW_TO_SI(w) ( (M_PI * GYRO_FS / 180.0) * ((double)w / 32768.0) )  
 
-#define A_RAW_TO_SI(a) ( PHYS_G * ((double)a / LSB_PER_G) )
-
-#define W_RAW_TO_SI(w) ( M_PI * 1000.0 * ((double)w / 32768.0) / 180.0 ) 
-
-long get_msecs_of_day (void)
-{
-    struct timeval t;
-    gettimeofday (&t, 0);
-    return t.tv_sec*1000 + t.tv_usec/1000;
-}
-
-long long timediff (const struct timeval *t, const struct timeval *s)
-{
-    time_t ds = t->tv_sec - s->tv_sec - 1;
-    suseconds_t dus = 1000000 - s->tv_usec + t->tv_usec;
-
-    return ds*1000000 + dus;
-}
-
-int collect_samples (const char *fname, int seconds)
-{
-    int rc;
-    struct sample_t *samples;
-    size_t smpl_sz, smpl_cnt;
-    uint8_t buffer [RAW_DATA_CHUNK_SIZE];
-
-    struct timeval s,t,s0;
-    int fd_in, fd_out;
-    size_t i;
-
-    fd_in = open (CHRDEV, O_RDONLY);
-   
-    if (fd_in < 0) {
-        fprintf (stderr, "Failed to open %s for reading.\n", CHRDEV);
-        return -errno;
-    }
-    
-    fd_out = open (fname, O_WRONLY | O_CREAT);
-   
-    if (fd_out < 0) {
-        fprintf (stderr, "Failed to open %s for writing.\n", fname);
-        return -errno;
-    }
-
-    smpl_sz = SAMPLING_FREQUENCY * seconds * 1.5;
-    samples = malloc (sizeof (struct sample_t) * smpl_sz);
-
-    if (samples == NULL) {
-        fprintf (stderr, "Failed to allocate memory for %llu samples.\n", 
-                smpl_sz);
-        return -errno;
-    }
-    
-    smpl_cnt = 0;
-
-    fprintf (stdout, "Start collecting.\n");
-    
-    gettimeofday (&s, 0);
-    s0 = t = s;
-    s.tv_sec += seconds;
-
-    while ((t.tv_sec < s.tv_sec) || (t.tv_usec < s.tv_usec)) {
-        rc = read (fd_in, buffer, RAW_DATA_CHUNK_SIZE);
-
-        samples[smpl_cnt].ax = MAKE16 (buffer[ 0], buffer[ 1]);
-        samples[smpl_cnt].ay = MAKE16 (buffer[ 2], buffer[ 3]);
-        samples[smpl_cnt].az = MAKE16 (buffer[ 4], buffer[ 5]);
-        samples[smpl_cnt].gx = MAKE16 (buffer[ 8], buffer[ 9]);
-        samples[smpl_cnt].gy = MAKE16 (buffer[10], buffer[11]);
-        samples[smpl_cnt].gz = MAKE16 (buffer[12], buffer[13]);
-        samples[smpl_cnt].tstmp = *(int64_t *)(buffer+14);
-        
-        ++smpl_cnt;
-        gettimeofday (&t, 0);
-    }
-    
-    close (fd_in);
-    
-    fprintf (stdout, "Collecting time: %lld us. Samples count: %ld. Writing to file.\n", 
-            timediff (&t, &s0), smpl_cnt);
-    
-    for (i = 0; i < smpl_cnt; ++i) {
-        rc = write (fd_out, samples + i, sizeof (struct sample_t));
-    }
-
-    close (fd_out);
-    free (samples);
-    
-    fprintf (stdout, "Done.\n");
-
-    return 0;
-}
-
+long long timediff (const struct timeval *, const struct timeval *);
+long get_msecs_of_day (void);
 int calculate (const char *);
+int collect_samples (const char *, int);
 
-int collect_mode, print;
+int collect_mode;
 double calibration_time;
-
-int fd_red, fd_green, fd_yellow;
-
-
-void signal_handler (int signum) 
-{
-    /*fd_red = open ("/sys/class/gpio/gpio27/value", O_WRONLY);
-    fd_green = open ("/sys/class/gpio/gpio22/value", O_WRONLY);
-    fd_yellow = open ("/sys/class/gpio/gpio17/value", O_WRONLY);
-    if (fd_red<0||fd_green<0||fd_yellow<0){
-        printf("Failed to open gpio value files.\n");
-        return 1;
-    }*/
-    write (fd_red, "0", 1);
-    write (fd_green, "0", 1);
-    write (fd_yellow, "0", 1);
-    close (fd_red);
-    close (fd_green);
-    close (fd_yellow);
-
-    exit (0);
-}
 
 int main (int argc, char **argv)
 {
     int rc = 0;
+    int opt;
     
     char *fname;
-
     int seconds;
-    int opt;
-        
     struct sample_t sample;
     uint8_t buffer [RAW_DATA_CHUNK_SIZE];
     int fd_in;
     size_t smpl_cnt;
 
-    int fd_gpio;
-
-/*    signal (SIGINT, signal_handler);
-
-    fd_gpio = open ("/sys/class/gpio/export", O_WRONLY);
-    write (fd_gpio, "17\n", 3);
-    close (fd_gpio);
-    fd_gpio = open ("/sys/class/gpio/export", O_WRONLY);
-    write (fd_gpio, "27\n", 3);
-    close (fd_gpio);
-    fd_gpio = open ("/sys/class/gpio/export", O_WRONLY);
-    write (fd_gpio, "22\n", 3);
-    close (fd_gpio);
-
-    fd_red = open ("/sys/class/gpio/gpio27/direction", O_WRONLY);
-    fd_green = open ("/sys/class/gpio/gpio22/direction", O_WRONLY);
-    fd_yellow = open ("/sys/class/gpio/gpio17/direction", O_WRONLY);
-    if (fd_red<0||fd_green<0||fd_yellow<0){
-        printf("Failed to open gpio direction files.\n");
-        return 1;
-    }
-    write (fd_red, "out", 3);
-    write (fd_green, "out", 3);
-    write (fd_yellow, "out", 3);
-    close (fd_red);
-    close (fd_green);
-    close (fd_yellow);
-
-    fd_red = open ("/sys/class/gpio/gpio27/value", O_WRONLY);
-    fd_green = open ("/sys/class/gpio/gpio22/value", O_WRONLY);
-    fd_yellow = open ("/sys/class/gpio/gpio17/value", O_WRONLY);
-    if (fd_red<0||fd_green<0||fd_yellow<0){
-        printf("Failed to open gpio value files.\n");
-        return 1;
-    }
-    write (fd_red, "0", 1);
-    write (fd_green, "0", 1);
-    write (fd_yellow, "0", 1);*/
-    /*close (fd_red);
-    close (fd_green);
-    close (fd_yellow);*/
-    
     fname = 0;
-    collect_mode = print = 0;
+    collect_mode = 0;
     calibration_time = 0;
     opterr = 0;
-    while ((opt = getopt (argc, argv, "a:f:s:p")) != -1) {
+    while ((opt = getopt (argc, argv, "a:f:s:h")) != -1) {
         switch (opt) {
+            case 'h':
+                fprintf (stdout, "Usage:\n"
+                        "%s [ -a <average seconds> ] "
+                        "[ -f <file> ] "
+                        "[ -s <sampling seconds>] "
+                        "[ -h ]\n", argv[0]);
+                fprintf (stdout,
+                        "Run on board:\n"
+                        "$ %s -f test001.bin -s 30\n"
+                        "\tThis creates test001.bin file and fill it with\n"
+                        "\t30 seconds of samples.\n", argv[0]);
+                fprintf (stdout,
+                        "Run on host:\n"
+                        "$ %s -f test001.bin -a 10\n"
+                        "\tThis reads test001.bin, calculates trajectory and\n"
+                        "\tput coordinates to out.dat file. First 10 seconds\n"
+                        "\tof samples are used for calibration and not\n"
+                        "\tappears in out.dat lines.\n", argv[0]);
+                return 0;
+
             case 's':
                 rc = sscanf (optarg, "%d", &seconds);
                 if (rc < 1) {
@@ -215,10 +84,6 @@ int main (int argc, char **argv)
                     fprintf (stderr, "Failed to parse calibration time parameter.\n");
                     return 1;
                 }
-                break;
-
-            case 'p':
-                print = 1;
                 break;
 
             case 'f':
@@ -245,18 +110,14 @@ int main (int argc, char **argv)
             return 1;
         }
         
-        write (fd_green, "1", 1);
-
         collect_samples (fname, seconds);
-
-        write (fd_green, "0", 1);
         
         return 0;
     }
    
 
     if (fname == NULL) {
-        fprintf (stderr, "File name omitted.\n");
+        fprintf (stderr, "File name omitted. Print-only mode.\n");
         
         fd_in = open (CHRDEV, O_RDONLY);
        
@@ -265,17 +126,6 @@ int main (int argc, char **argv)
             return -errno;
         }
         
-        write (fd_green, "1", 1);
-        write (fd_yellow, "1", 1);
-        write (fd_red, "1", 1);
-        double a, w, axy;
-        double owx, owy, owz;
-
-        size_t smpl_cnt = 0;
-        owx = owy = owz = 0;
-        double g;
-        g = 0;
-
         while (1) {
             rc = read (fd_in, buffer, RAW_DATA_CHUNK_SIZE);
 
@@ -287,71 +137,16 @@ int main (int argc, char **argv)
             sample.gz = MAKE16 (buffer[12], buffer[13]);
             sample.tstmp = *(int64_t *)(buffer+14);
            
-            if (print) {
-                fprintf (stdout, "%16lld %6d %6d %6d %6d %6d %6d ", sample.tstmp,
+            fprintf (stdout, "%16lld %6d %6d %6d %6d %6d %6d\n", sample.tstmp,
                     sample.ax, sample.ay, sample.az,
                     sample.gx, sample.gy, sample.gz);
-            }
-            
-            a = sqrt (sample.ax * sample.ax + sample.ay * sample.ay + sample.az * sample.az);
-            axy = sqrt (sample.ax * sample.ax + sample.ay * sample.ay);
-
-            #define CALCNT 2048
-            if (smpl_cnt < CALCNT) {
-                smpl_cnt++;
-                owx += sample.gx;
-                owy += sample.gy;
-                owz += sample.gz;
-
-                g += a;
-                
-                if (print) {
-                    fprintf (stdout, "\n");
-                }
-                continue;
-            } else if (smpl_cnt == CALCNT) {
-                smpl_cnt++;
-                owx /= CALCNT;
-                owy /= CALCNT;
-                owz /= CALCNT;
-
-                g /= CALCNT;
-                
-                write (fd_yellow, "0", 1);
-                write (fd_red, "0", 1);
-            }
-            sample.gx -= owx;
-            sample.gy -= owy;
-            sample.gz -= owz;
-
-            w = sqrt (sample.gx * sample.gx + sample.gy * sample.gy + sample.gz * sample.gz);
-            if (fabs (a - g) > 300) {
-                write (fd_yellow, "1", 1);
-            } else {
-                write (fd_yellow, "0", 1);
-            }
-
-           if (w > 400) {
-                write (fd_red, "1", 1);
-            } else {
-                write (fd_red, "0", 1);
-            }
-
-            if (print) {
-                fprintf (stdout, "   ( a: %8.2lf w: %8.2lf a[XY]: %8.2lf)\n", a, w, axy);
-            }
         }
-
-        write (fd_green, "0", 1);
             
         close (fd_in); 
         return 0;
     }
 
-
-
     calculate (fname);
-    
     
     return 0;
 }
@@ -375,9 +170,6 @@ int calculate (const char *fname)
         close (fd_in);
         return -errno;
     }
-  
-
-
     
     /* local axes: i, j, k,
         global: x, y, z 
@@ -387,9 +179,7 @@ int calculate (const char *fname)
         v - linear velocity
         
         *i - projection to i
-
         o* - zero-point offset
-
         *_ - previous value */
 
     double ai, aj;
@@ -449,12 +239,6 @@ int calculate (const char *fname)
             return -1;
         }
         smpl_cnt++;
-        
-        if (print) {
-            fprintf (stdout, "%16lld %6d %6d %6d %6d %6d %6d\n", sample.tstmp,
-                        sample.ax, sample.ay, sample.az,
-                        sample.gx, sample.gy, sample.gz);
-        }
 
         ai = A_RAW_TO_SI (sample.ax);
         aj = A_RAW_TO_SI (sample.ay);
@@ -599,47 +383,91 @@ int calculate (const char *fname)
     return 0;
 }
 
-
-
-
-
-
-
-
-
-/*
-int print_file (const char *fname)
+int collect_samples (const char *fname, int seconds)
 {
     int rc;
-    int fd_in;
-    struct sample_t smpl0, smpl;
-    fd_in = open (fname, O_RDONLY);
-    
+    struct sample_t *samples;
+    size_t smpl_sz, smpl_cnt;
+    uint8_t buffer [RAW_DATA_CHUNK_SIZE];
+
+    struct timeval s,t,s0;
+    int fd_in, fd_out;
+    size_t i;
+
+    fd_in = open (CHRDEV, O_RDONLY);
+   
     if (fd_in < 0) {
-        fprintf (stderr, "Failed to open %s for reading.\n", fname);
+        fprintf (stderr, "Failed to open %s for reading.\n", CHRDEV);
         return -errno;
     }
+    
+    fd_out = open (fname, O_WRONLY | O_CREAT);
    
-    smpl_cnt = 0;
-    while (1) {
-        rc = read (fd_in, &sample, sizeof (struct sample_t));
-        if (rc == 0)
-            break;
-        if (rc < sizeof (struct sample_t)) {
-            fprintf (stderr, "Corrupted input file.\n");
-            return -1;
-        }
-
-        fprintf (stdout, "%16lld %6d %6d %6d %6d %6d %6d\n", sample.tstmp,
-                    sample.ax, sample.ay, sample.az,
-                    sample.gx, sample.gy, sample.gz);
-        ++smpl_cnt;
+    if (fd_out < 0) {
+        fprintf (stderr, "Failed to open %s for writing.\n", fname);
+        return -errno;
     }
 
-    fprintf (stdout, "----\ncount: %ld\n", smpl_cnt);
+    smpl_sz = SAMPLING_FREQUENCY * seconds * 1.5;
+    samples = malloc (sizeof (struct sample_t) * smpl_sz);
 
+    if (samples == NULL) {
+        fprintf (stderr, "Failed to allocate memory for %llu samples.\n", 
+                smpl_sz);
+        return -errno;
+    }
+    
+    smpl_cnt = 0;
+
+    fprintf (stdout, "Start collecting.\n");
+    
+    gettimeofday (&s, 0);
+    s0 = t = s;
+    s.tv_sec += seconds;
+
+    while ((t.tv_sec < s.tv_sec) || (t.tv_usec < s.tv_usec)) {
+        rc = read (fd_in, buffer, RAW_DATA_CHUNK_SIZE);
+
+        samples[smpl_cnt].ax = MAKE16 (buffer[ 0], buffer[ 1]);
+        samples[smpl_cnt].ay = MAKE16 (buffer[ 2], buffer[ 3]);
+        samples[smpl_cnt].az = MAKE16 (buffer[ 4], buffer[ 5]);
+        samples[smpl_cnt].gx = MAKE16 (buffer[ 8], buffer[ 9]);
+        samples[smpl_cnt].gy = MAKE16 (buffer[10], buffer[11]);
+        samples[smpl_cnt].gz = MAKE16 (buffer[12], buffer[13]);
+        samples[smpl_cnt].tstmp = *(int64_t *)(buffer+14);
+        
+        ++smpl_cnt;
+        gettimeofday (&t, 0);
+    }
+    
     close (fd_in);
+    
+    fprintf (stdout, "Collecting time: %lld us. Samples count: %ld. Writing to file.\n", 
+            timediff (&t, &s0), smpl_cnt);
+    
+    for (i = 0; i < smpl_cnt; ++i) {
+        rc = write (fd_out, samples + i, sizeof (struct sample_t));
+    }
+
+    close (fd_out);
+    free (samples);
+    
+    fprintf (stdout, "Done.\n");
 
     return 0;
 }
-*/
+
+long get_msecs_of_day (void)
+{
+    struct timeval t;
+    gettimeofday (&t, 0);
+    return t.tv_sec*1000 + t.tv_usec/1000;
+}
+
+long long timediff (const struct timeval *t, const struct timeval *s)
+{
+    time_t ds = t->tv_sec - s->tv_sec - 1;
+    suseconds_t dus = 1000000 - s->tv_usec + t->tv_usec;
+
+    return ds*1000000 + dus;
+}

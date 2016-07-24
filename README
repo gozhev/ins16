@@ -1,0 +1,58 @@
+Yet Another Inertial Navigation System
+
+Version: 1.0 2016-07-24
+
+List of directories:
+====================
+./nav -- userspace calculation program
+./drv -- sensor driver
+./ref -- reference materials
+./pub -- presentation, public speech
+./btn -- utility for demonstrtation, *board-specific*
+
+Installation:
+=============
+Copy mknod.sh to your board.
+Edit device tree of your board to add mpu6050 sensor support. 
+Look in bcm2708-rpi-b.dts for reference. 
+
+Go to ./drv, add you cross compiler to Makefile.
+Run
+$ make
+Copy fast-mpu6050.ko to /lib/modules/<you kernel release>/extra on your board.
+
+On your board:
+Run
+$ depmod
+Reboot.
+After each reboot of your board you should run
+$ ./mknod.sh
+in order to create /dev/mpu6050 node.
+
+Go to ./nav, add you cross compiler to Makefile.
+Run
+$ make
+Copy nav to your board.
+
+Run
+$ make PLATFORM=THIS
+This makes host version of nav to calculate trajectory.
+
+How to run program:
+===================
+see ./nav/README 
+
+Notes:
+======
+Sensors supported: Ivensense MPU-6050 only.
+
+HW Connection: Sensor is connected to I2C-1 Bus, interrupt line is connected to
+GPIO pin. See .dts file.
+
+Sensor settings are hardcoded into driver.
+TODO: Export settings to sysfs.
+
+At the moment nav only calculates 2D map. In order to get precise results
+the surface of floor must be as level as possible.
+
+

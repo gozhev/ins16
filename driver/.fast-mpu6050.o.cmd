@@ -1,1 +1,0 @@
-cmd_/home/student/rtsoft/training/project/driver/fast-mpu6050.o := /home/student/dvlp/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-ld -EL    -r -o /home/student/rtsoft/training/project/driver/fast-mpu6050.o /home/student/rtsoft/training/project/driver/fast_mpu6050.o 

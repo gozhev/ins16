@@ -28,6 +28,7 @@
 #define MPU6050_RA_YG_OFFS_USRL     0x16
 #define MPU6050_RA_ZG_OFFS_USRH     0x17 //[15:0] ZG_OFFS_USR
 #define MPU6050_RA_ZG_OFFS_USRL     0x18
+
 #define MPU6050_RA_SMPLRT_DIV       0x19
 #define MPU6050_RA_CONFIG           0x1A
 #define MPU6050_RA_GYRO_CONFIG      0x1B
