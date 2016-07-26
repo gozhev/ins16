@@ -24,6 +24,7 @@ $(TARGET): $(CSRCS)
 
 clean:
 	rm -f $(TARGET)
+	rm -f out.dat
 
 upload: $(TARGET)
 	scp $(TARGET) $(REMOTE_USR)@$(REMOTE_HST):$(REMOTE_DIR)
