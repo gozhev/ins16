@@ -10,13 +10,13 @@
 #include <math.h>
 #include "sample.h"
 
-#define RAW_DATA_CHUNK_SIZE 22
-#define SAMPLING_FREQUENCY 1000
+#define RAW_DATA_CHUNK_SIZE 22 /* byte(s) */
+#define SAMPLING_FREQUENCY 1000 /* Hz */
 #define CHRDEV "/dev/mpu6050"
 
 #define PHYS_G 9.80665 /* acceleration of gravity in meters per second squared */
 /* Full Scale Ranges of Sensors */
-#define ACCEL_FS 2.0 /* acceleration(s) of gravity */
+#define ACCEL_FS 4.0 /* acceleration(s) of gravity */
 #define GYRO_FS 1000.0 /* degrees per sec */
 
 /* convert raw values to SI */
@@ -27,50 +27,37 @@ long long timediff (const struct timeval *, const struct timeval *);
 long get_msecs_of_day (void);
 int calculate (const char *);
 int collect_samples (const char *, int);
+void print_usage (FILE *, char *);
+void raw_to_sample (struct sample_t *, uint8_t *);
+inline void print_sample (FILE *, struct sample_t *);
 
 int collect_mode;
 double calibration_time;
 
 int main (int argc, char **argv)
 {
-    int rc = 0;
+    int rc;
     int opt;
     
     char *fname;
-    int seconds;
+    int seconds_to_collect;
     struct sample_t sample;
     uint8_t buffer [RAW_DATA_CHUNK_SIZE];
     int fd_in;
     size_t smpl_cnt;
 
-    fname = 0;
+    fname = NULL;
     collect_mode = 0;
     calibration_time = 0;
+
     opterr = 0;
     while ((opt = getopt (argc, argv, "a:f:s:h")) != -1) {
         switch (opt) {
-            case 'h':
-                fprintf (stdout, "Usage:\n"
-                        "%s [ -a <average seconds> ] "
-                        "[ -f <file> ] "
-                        "[ -s <sampling seconds>] "
-                        "[ -h ]\n", argv[0]);
-                fprintf (stdout,
-                        "Run on board:\n"
-                        "$ %s -f test001.bin -s 30\n"
-                        "\tThis creates test001.bin file and fill it with\n"
-                        "\t30 seconds of samples.\n", argv[0]);
-                fprintf (stdout,
-                        "Run on host:\n"
-                        "$ %s -f test001.bin -a 10\n"
-                        "\tThis reads test001.bin, calculates trajectory and\n"
-                        "\tput coordinates to out.dat file. First 10 seconds\n"
-                        "\tof samples are used for calibration and not\n"
-                        "\tappears in out.dat lines.\n", argv[0]);
+            case 'h': print_usage (stdout, argv[0]);
                 return 0;
 
             case 's':
-                rc = sscanf (optarg, "%d", &seconds);
+                rc = sscanf (optarg, "%d", &seconds_to_collect);
                 if (rc < 1) {
                     fprintf (stderr, "Failed to parse time parameter.\n");
                     return 1;
@@ -86,8 +73,7 @@ int main (int argc, char **argv)
                 }
                 break;
 
-            case 'f':
-                fname = optarg;
+            case 'f': fname = optarg;
                 break;
 
             case '?':
@@ -110,36 +96,24 @@ int main (int argc, char **argv)
             return 1;
         }
         
-        collect_samples (fname, seconds);
+        collect_samples (fname, seconds_to_collect);
         
         return 0;
     }
-   
 
     if (fname == NULL) {
         fprintf (stderr, "File name omitted. Print-only mode.\n");
         
         fd_in = open (CHRDEV, O_RDONLY);
-       
         if (fd_in < 0) {
             fprintf (stderr, "Failed to open %s for reading.\n", CHRDEV);
             return -errno;
         }
         
-        while (1) {
+        while (1) { /* yes, it wait you to press Ctrl+C */
             rc = read (fd_in, buffer, RAW_DATA_CHUNK_SIZE);
-
-            sample.ax = MAKE16 (buffer[ 0], buffer[ 1]);
-            sample.ay = MAKE16 (buffer[ 2], buffer[ 3]);
-            sample.az = MAKE16 (buffer[ 4], buffer[ 5]);
-            sample.gx = MAKE16 (buffer[ 8], buffer[ 9]);
-            sample.gy = MAKE16 (buffer[10], buffer[11]);
-            sample.gz = MAKE16 (buffer[12], buffer[13]);
-            sample.tstmp = *(int64_t *)(buffer+14);
-           
-            fprintf (stdout, "%16lld %6d %6d %6d %6d %6d %6d\n", sample.tstmp,
-                    sample.ax, sample.ay, sample.az,
-                    sample.gx, sample.gy, sample.gz);
+            raw_to_sample (&sample, buffer);
+            print_sample (stdout, &sample);     
         }
             
         close (fd_in); 
@@ -159,11 +133,14 @@ int calculate (const char *fname)
     FILE *fout;
     struct sample_t sample;
     size_t smpl_cnt;
+    int clbr_cnt;
+
     fd_in = open (fname, O_RDONLY);
     if (fd_in < 0) {
         fprintf (stderr, "Failed to open %s for reading.\n", fname);
         return -errno;
     }
+
     fout = fopen ("out.dat", "w");
     if (fout == 0) {
         fprintf (stderr, "Failed to open %s for writing.\n", "out.dat");
@@ -179,206 +156,152 @@ int calculate (const char *fname)
         v - linear velocity
         
         *i - projection to i
-        o* - zero-point offset
+        z_* - zero-point offset
         *_ - previous value */
 
-    double ai, aj;
-    double wk;
+    double ai, aj, ak;
+    double wi, wj, wk;
     
-    double ai_, aj_;
-    double wk_;
-
-    double oai, oaj;
-    double owk;
+    double z_ai, z_aj;
+    double z_wi, z_wj, z_wk;
 
     double x_, y_, x, y;
-    double u_, u, u2;
-    double v_, v;
+    double u_, u;
+    double v;
 
     double dt;
 
-    double ax, ay, ax_, ay_;
+    double ax, ay;
     double vx, vy, vx_, vy_;
-    
-    double ix, jx, iy, jy;
-    ix = 1, jx = 0;
-    iy = 0, jy = 1;
 
-    ax_ = 0;
-    ay_ = 0;
+    /* orientation quaternion:
+        s0 = Cos (PHY/2)
+        s1 = u * Sin (PHY/2)
+        s2 = u * Sin (PHY/2)
+        s3 = u * Sin (PHY/2)
+        
+        where u is a three-dimensional unit vector,
+        and PHY is a rotation angle
+        
+        s0..3 represents rotation around the axis u of angle PHY */
+
+    double s0, s1, s2, s3;
+    double s0_, s1_, s2_, s3_;
+
+    /* default rotation */
+    s0_ = 1;
+    s1_ = s2_ = s3_ = 0;
+    
+    u_ = 0;
     
     vx_ = 0;
     vy_ = 0;
+    x_ = 0;
+    y_ = 0;
     
     dt = 0.001;
 
-    ai_ = 0;
-    aj_ = 0;
-    wk_ = 0;
-
-    x_ = 0;
-    y_ = 0;
-    u_ = 0;
-    v_ = 0;
-
-    oai = 0;
-    oaj = 0;
-    owk = 0;
+    z_ai = z_aj = 0;
+    z_wi = z_wj = z_wk = 0;
 
     smpl_cnt = 0;
-
-    int clbr_cnt = calibration_time * 1000;
-
+    clbr_cnt = calibration_time * SAMPLING_FREQUENCY;
 
     while (1) {
         rc = read (fd_in, &sample, sizeof (struct sample_t));
         if (rc == 0)
             break;
         if (rc < sizeof (struct sample_t)) {
-            fprintf (stderr, "Corrupted input file.\n");
+            fprintf (stderr, "Corrupted input file. Calculation not finished.\n");
             return -1;
         }
+    
         smpl_cnt++;
+
+        /* print_sample (stdout, &sample); */
 
         ai = A_RAW_TO_SI (sample.ax);
         aj = A_RAW_TO_SI (sample.ay);
+        ak = A_RAW_TO_SI (sample.az);
+        wi = W_RAW_TO_SI (sample.gx);
+        wj = W_RAW_TO_SI (sample.gy);
         wk = W_RAW_TO_SI (sample.gz);
-        
+       
+        /* TODO: add averaging filter that uniforms dispersion, not average */
+
+        /* TODO: 
+            calibration steps nedded:
+            - zero offset for accel
+            - sensitivity scaling for accel
+            - zero offset for gyro */
+
         if (smpl_cnt < clbr_cnt) {
-            oai += ai;
-            oaj += aj;
-            
-            owk += wk;
-            
+            z_ai += ai;
+            z_aj += aj;
+            z_wi += wi;
+            z_wj += wj;
+            z_wk += wk;
             continue;
         }
         
         if (smpl_cnt == clbr_cnt) {
-            oai /= smpl_cnt;
-            oaj /= smpl_cnt;
-
-            owk /= smpl_cnt;
+            z_ai /= smpl_cnt;
+            z_aj /= smpl_cnt;
+            z_wi /= smpl_cnt;
+            z_wj /= smpl_cnt;
+            z_wk /= smpl_cnt;
         }
         
-        ai -= oai;
-        aj -= oaj;
-        
-        wk -= owk;
+        ai -= z_ai;
+        aj -= z_aj;
+        wi -= z_wi;
+        wj -= z_wj;
+        wk -= z_wk;
 
-/*        if (sqrt(ai*ai + aj*aj) < 0.1) {
-            ai = 0;
-            aj = 0;
-        };
+        /* TODO: place mechanical noise filter here */
 
-        if (fabs(wk) < 0.2) {
-            wk = 0;
-        };
-*/
-        
-        /* prediction */
-/*        u  = u_;
-        if (fabs(v_) > 0.0001)
-            u +=    ((aj_ / v_) * dt);
-        u2 = u_ +          (wk_ * dt);*/
-//        v  = v_ +          (ai_ * dt);
+        /* don't forget to run no-motion tests */
         
         u = u_ + (wk * dt);
+/*
+        s0 = s0_ + 0.5 * dt * (- (s1_ * wi) - (s2_ * wj) - (s3_ * wk));
+        s1 = s1_ + 0.5 * dt * (+ (s0_ * wi) - (s3_ * wj) - (s2_ * wk));
+        s2 = s2_ + 0.5 * dt * (+ (s3_ * wi) + (s0_ * wj) - (s1_ * wk));
+        s3 = s3_ + 0.5 * dt * (- (s2_ * wi) + (s1_ * wj) + (s0_ * wk));
+*/
 
-        /* correction */
         ax = ai * cos (u) - aj * sin (u);
         ay = ai * sin (u) + aj * cos (u);
-        //ax = (ix * ai) + (jx * aj);
-        //ay = (iy * ai) + (jy * aj);
 
         vx = vx_ + (ax * dt);
         vy = vy_ + (ay * dt);
         
-//        v  = v_ + (0.5 * (ai_ + ai) * dt);
-        v = sqrt(vx*vx + vy*vy);
+        v = sqrt (vx * vx + vy * vy);
 
         vx = v * cos (u);
         vy = v * sin (u);
         
-/*        u  = u_;
-        if (fabs(v_) > 0.0001)
-            u += (0.5 * (aj_ / v_) * dt);
-        if (fabs(v) > 0.0001)
-            u += (0.5 *   (aj / v) * dt);
-        u2 = u_ + (0.5 * (wk_ + wk) * dt);
-*/        
-        
-        /* complement filter */
-  //      double f = 0;
-   //     u = (f * u) + ((1 - f) * u2);
-        
-        
         x  = x_ + vx_ * dt + 0.5 * ax * dt * dt;
         y  = y_ + vy_ * dt + 0.5 * ay * dt * dt;
-        //x  = x_ + (0.5 * ((v_ * cos(u_)) + (v * cos(u))) * dt) + (((ax_ / 3) + (ax / 6)) * dt * dt);
-        //y  = y_ + (0.5 * ((v_ * sin(u_)) + (v * sin(u))) * dt) + (((ay_ / 3) + (ay / 6)) * dt * dt);
-        
-        ai_ = ai;
-        aj_ = aj;
-        wk_ = wk;
-
+       
         u_ = u;
         x_ = x;
         y_ = y;
-        v_ = v;
-
-        ax_ = ax;
-        ay_ = ay;
         vx_ = vx;
         vy_ = vy;
 
-        
+        s0_ = s0;
+        s1_ = s1;
+        s2_ = s2;
+        s3_ = s3;
 
-
-        /*vx = vx_ + (ax_ * dt);
-        vy = vy_ + (ay_ * dt);
-
-        v = sqrt ((vx * vx) + (vy * vy));
-
-        if (0.0001 < fabs(v)) {
-            ix = vx / v;
-            iy = vy / v;
-            jx = -iy;
-            jy = ix;
-        }
-
-        ax = (ix * ai) + (jx * aj);
-        ay = (iy * ai) + (jy * aj);
-
-        vx = vx_ + (0.5 * (ax_ + ax) * dt);
-        vy = vy_ + (0.5 * (ay_ + ay) * dt);
-
-        v = sqrt ((vx * vx) + (vy * vy));
-
-        if (0.0001 < fabs(v)) {
-            ix = vx / v;
-            iy = vy / v;
-            jx = -iy;
-            jy = ix;
-        }
-        
-        ax = (ix * ai) + (jx * aj);
-        ay = (iy * ai) + (jy * aj);
-
-        x = x_ + (vx_ * dt) + (((ax_ / 3) + (ax / 6)) * dt * dt);
-        y = y_ + (vy_ * dt) + (((ay_ / 3) + (ay / 6)) * dt * dt);*/
-
-
-        fprintf (fout, "%lf %lf %lf\n", x, y, v);
+        fprintf (fout, "%lf %lf\n", x, y);
     }
     
     fprintf (stdout, "----\ncount: %ld\n", smpl_cnt);
-    
-    fprintf (stdout, "calibration: oai=%lf, oaj=%lf\n", oai, oaj);
 
     fclose (fout);
     close (fd_in);
-
-    
 
     return 0;
 }
@@ -427,15 +350,7 @@ int collect_samples (const char *fname, int seconds)
 
     while ((t.tv_sec < s.tv_sec) || (t.tv_usec < s.tv_usec)) {
         rc = read (fd_in, buffer, RAW_DATA_CHUNK_SIZE);
-
-        samples[smpl_cnt].ax = MAKE16 (buffer[ 0], buffer[ 1]);
-        samples[smpl_cnt].ay = MAKE16 (buffer[ 2], buffer[ 3]);
-        samples[smpl_cnt].az = MAKE16 (buffer[ 4], buffer[ 5]);
-        samples[smpl_cnt].gx = MAKE16 (buffer[ 8], buffer[ 9]);
-        samples[smpl_cnt].gy = MAKE16 (buffer[10], buffer[11]);
-        samples[smpl_cnt].gz = MAKE16 (buffer[12], buffer[13]);
-        samples[smpl_cnt].tstmp = *(int64_t *)(buffer+14);
-        
+        raw_to_sample (&samples[smpl_cnt], buffer);
         ++smpl_cnt;
         gettimeofday (&t, 0);
     }
@@ -470,4 +385,43 @@ long long timediff (const struct timeval *t, const struct timeval *s)
     suseconds_t dus = 1000000 - s->tv_usec + t->tv_usec;
 
     return ds*1000000 + dus;
+}
+
+void print_usage (FILE *fout, char *this_name)
+{
+    fprintf (fout, "Usage:\n"
+            "%s [ -a <average seconds> ] "
+            "[ -f <file> ] "
+            "[ -s <sampling seconds>] "
+            "[ -h ]\n", this_name);
+    fprintf (fout,
+            "Run on board:\n"
+            "$ %s -f test001.bin -s 30\n"
+            "\tThis creates test001.bin file and fill it with\n"
+            "\t30 seconds of samples.\n", this_name);
+    fprintf (fout,
+            "Run on host:\n"
+            "$ %s -f test001.bin -a 10\n"
+            "\tThis reads test001.bin, calculates trajectory and\n"
+            "\tput coordinates to out.dat file. First 10 seconds\n"
+            "\tof samples are used for calibration and not\n"
+            "\tappears in out.dat lines.\n", this_name);
+}
+
+void raw_to_sample (struct sample_t *sample, uint8_t *raw)
+{
+    sample->ax = MAKE16 (raw[ 0], raw[ 1]);
+    sample->ay = MAKE16 (raw[ 2], raw[ 3]);
+    sample->az = MAKE16 (raw[ 4], raw[ 5]);
+    sample->gx = MAKE16 (raw[ 8], raw[ 9]);
+    sample->gy = MAKE16 (raw[10], raw[11]);
+    sample->gz = MAKE16 (raw[12], raw[13]);
+    sample->tstmp = *(int64_t *)(raw+14);
+}
+
+inline void print_sample (FILE *fout, struct sample_t *sample)
+{
+    fprintf (fout, "%16lld %6d %6d %6d %6d %6d %6d\n", sample->tstmp,
+            sample->ax, sample->ay, sample->az,
+            sample->gx, sample->gy, sample->gz);
 }
