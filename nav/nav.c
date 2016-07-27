@@ -162,7 +162,7 @@ int calculate (const char *fname)
     double ai, aj, ak;
     double wi, wj, wk;
     
-    double z_ai, z_aj;
+    double z_ai, z_aj, z_ak;
     double z_wi, z_wj, z_wk;
 
     double x_, y_, x, y;
@@ -235,6 +235,11 @@ int calculate (const char *fname)
             - sensitivity scaling for accel
             - zero offset for gyro */
 
+        /* I think we can not calibrate zero-point offset of accelerometer
+            in-place in static position. Do do so we need to rotate sensor
+            180 degrees around the axe which is orthogonal to acceleration
+            of gravity during the calibration process. */
+
         if (smpl_cnt < clbr_cnt) {
             z_ai += ai;
             z_aj += aj;
@@ -270,20 +275,26 @@ int calculate (const char *fname)
         s3 = s3_ + 0.5 * dt * (- (s2_ * wi) + (s1_ * wj) + (s0_ * wk));
 */
 
+        /* convert acceleration from local coordinates to global */
         ax = ai * cos (u) - aj * sin (u);
         ay = ai * sin (u) + aj * cos (u);
 
+        /* integrate acceleration one time to get velocity 
+            in absolute coordinates */
         vx = vx_ + (ax * dt);
         vy = vy_ + (ay * dt);
         
+        /* correct velocity: still looks like a magic */
         v = sqrt (vx * vx + vy * vy);
 
         vx = v * cos (u);
         vy = v * sin (u);
         
+        /* integrate acceleration two times to get absolute coordinates */
         x  = x_ + vx_ * dt + 0.5 * ax * dt * dt;
         y  = y_ + vy_ * dt + 0.5 * ay * dt * dt;
-       
+
+        /* prepare variables for the next iteration */
         u_ = u;
         x_ = x;
         y_ = y;

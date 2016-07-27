@@ -1,0 +1,892 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0076)http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors -->
+<html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>
+      Blog: Beautiful maths simplification: quaternion from two vectors – Lol Engine
+    </title>
+      
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--[if IE]><script type="text/javascript">
+      if (/^#__msie303:/.test(window.location.hash))
+        window.location.replace(window.location.hash.replace(/^#__msie303:/, '#'));
+    </script><![endif]-->
+        <link rel="search" href="http://lolengine.net/search">
+        <link rel="help" href="http://lolengine.net/wiki/TracGuide">
+        <link rel="next" href="http://lolengine.net/blog/2013/09/21/picking-orthogonal-vector-combing-coconuts" title="2013/09/21/picking-orthogonal-vector-combing-coconuts">
+        <link rel="start" href="http://lolengine.net/wiki">
+        <link rel="stylesheet" href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/trac.css" type="text/css"><link rel="stylesheet" href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/fullblog.css" type="text/css"><link rel="stylesheet" href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/code.css" type="text/css"><link rel="stylesheet" href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/tracmenus.css" type="text/css"><link rel="stylesheet" href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/bitten.css" type="text/css">
+        <link rel="prev" href="http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl" title="2013/07/27/rgb-to-hsv-in-glsl">
+        <link rel="shortcut icon" href="http://lolengine.net/favicon.ico" type="image/x-icon">
+        <link rel="icon" href="http://lolengine.net/favicon.ico" type="image/x-icon">
+      <link type="application/opensearchdescription+xml" rel="search" href="http://lolengine.net/search/opensearch" title="Search Lol Engine">
+      <script type="text/javascript" charset="utf-8" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/jquery.js"></script>
+      <script type="text/javascript" charset="utf-8" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/babel.js"></script>
+      <script type="text/javascript" charset="utf-8" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/trac.js"></script>
+      <script type="text/javascript" charset="utf-8" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/search.js"></script>
+      <script type="text/javascript" charset="utf-8" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/superfish.js"></script>
+      <script type="text/javascript" charset="utf-8" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/tracmenus.js"></script>
+      <script type="text/javascript" charset="utf-8" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/jquery.hoverIntent.minified.js"></script>
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        $(".trac-autofocus").focus();
+        $(".trac-target-new").attr("target", "_blank");
+        setTimeout(function() { $(".trac-scroll").scrollToTop() }, 1);
+        $(".trac-disable-on-submit").disableOnSubmit();
+      });
+    </script>
+    <link rel="alternate" href="http://lolengine.net/blog?format=rss" type="application/rss+xml" class="rss" title="RSS Feed">
+    <script type="text/javascript">
+      jQuery(document).ready(function($) {
+        $("#content").find("h1,h2,h3,h4,h5,h6").filter("[id]").addAnchor("Link here");
+      });
+    </script>
+    <link rel="stylesheet" type="text/css" href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/lolengine.css">
+  <link rel="stylesheet" type="text/css" href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/monokai.css"><script type="text/javascript" charset="utf-8" async="" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/button.1813ea3f78757294e1ba1cea21b068a0.js"></script></head>
+  <body>
+    <div class="corps">
+    <div id="banner">
+      <div id="header">
+        <a id="logo" href="http://lolengine.net/"><img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/logo.png" alt="LOL!" height="96" width="200"></a>
+      </div>
+      <form id="search" action="http://lolengine.net/search" method="get">
+        <div>
+          <label for="proj-search">Search:</label>
+          <input type="text" id="proj-search" name="q" size="18" value="">
+          <input type="submit" value="Search">
+        </div>
+      </form>
+      <div id="metanav" class="nav">
+    <ul>
+      <li class="first"><a href="http://lolengine.net/login">Login</a></li><li><a href="http://lolengine.net/prefs">Preferences</a></li><li class="last"><a href="http://lolengine.net/wiki/TracGuide">Help/Guide</a></li>
+    </ul>
+  </div>
+    </div>
+    <div id="mainnav" class="nav">
+    <ul class="sf-menu sf-js-enabled sf-shadow">
+      <li class="first"><a href="http://lolengine.net/wiki">Home</a></li><li><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" class="sf-with-ul">Community<span class="sf-sub-indicator"> »</span></a><ul style="display: none; visibility: hidden;"><li><a href="http://lolengine.net/wiki/about">About</a></li><li class="active"><a href="http://lolengine.net/blog">Blog</a></li></ul></li><li><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" class="sf-with-ul">Support<span class="sf-sub-indicator"> »</span></a><ul style="display: none; visibility: hidden;"><li><a href="http://lolengine.net/wiki/doc/dev/getting-started">Download</a></li><li><a href="http://lolengine.net/wiki/doc">Documentation</a></li></ul></li><li><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" class="sf-with-ul">Development<span class="sf-sub-indicator"> »</span></a><ul style="display: none; visibility: hidden;"><li><a href="http://lolengine.net/browser">Browse Source</a></li><li><a class="bittenpending" href="http://lolengine.net/build">Build Status</a></li><li><a href="http://lolengine.net/timeline">Timeline</a></li></ul></li><li class="last"><a href="http://lolengine.net/search">Search</a></li>
+    </ul>
+  </div>
+    <div id="main">
+      <div id="ctxtnav" class="nav">
+        <h2>Context Navigation</h2>
+        <ul>
+          <li class="first"><span>← <a class="prev" href="http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl" title="2013/07/27/rgb-to-hsv-in-glsl">Previous Post</a></span></li><li class="last"><span><a class="next" href="http://lolengine.net/blog/2013/09/21/picking-orthogonal-vector-combing-coconuts" title="2013/09/21/picking-orthogonal-vector-combing-coconuts">Next Post</a> →</span></li>
+        </ul>
+        <hr>
+      </div>
+    <div id="content" class="blog wiki">
+      
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <p>
+        About: <a href="http://lolengine.net/blog/about">The Lol Engine Blog</a>
+      </p>
+    </div>
+    <div class="sidebar-section">
+      <p>
+        <span class="metainfo">
+          <a href="http://lolengine.net/blog?format=rss">
+            <img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/feed.png" alt="RSS"> rss
+          </a>
+        </span>
+        Archive: <a href="http://lolengine.net/blog/archive">All posts</a> (33)
+      </p>
+    </div>
+    <div class="sidebar-section">
+        <p>Browse by time:</p>
+        <ul>
+          <li>
+            <a href="http://lolengine.net/blog/2015/5">May 2015</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2014/2">February 2014</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2013/9">September 2013</a> (2)
+          </li><li>
+            <a href="http://lolengine.net/blog/2013/7">July 2013</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2013/1">January 2013</a> (2)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/12">December 2012</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/11">November 2012</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/10">October 2012</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/6">June 2012</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/5">May 2012</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/4">April 2012</a> (2)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/2">February 2012</a> (2)
+          </li><li>
+            <a href="http://lolengine.net/blog/2012/1">January 2012</a> (2)
+          </li><li>
+            <a href="http://lolengine.net/blog/2011/12">December 2011</a> (4)
+          </li><li>
+            <a href="http://lolengine.net/blog/2011/11">November 2011</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2011/9">September 2011</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2011/7">July 2011</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2011/6">June 2011</a> (1)
+          </li><li>
+            <a href="http://lolengine.net/blog/2011/3">March 2011</a> (7)
+          </li>
+        </ul>
+    </div>
+    <div class="sidebar-section">
+        <p>Browse by author:</p>
+        <ul>
+          <li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/author/sam?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/author/sam">sam</a> (33)</li>
+        </ul>
+    </div>
+    <div class="sidebar-section last">
+        <p>Browse by category:</p>
+        <ul>
+          <li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/a11y?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/a11y">a11y</a>
+                  (4)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/android?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/android">android</a>
+                  (2)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/blog?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/blog">blog</a>
+                  (3)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/c?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/c">c</a>
+                  (1)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/c%2B%2B?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/c%2B%2B">c++</a>
+                  (5)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/code?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/code">code</a>
+                  (15)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/community?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/community">community</a>
+                  (1)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/glsl?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/glsl">glsl</a>
+                  (2)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/iphone?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/iphone">iphone</a>
+                  (1)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/maths?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/maths">maths</a>
+                  (8)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/optim?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/optim">optim</a>
+                  (13)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/osx?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/osx">osx</a>
+                  (1)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/physics?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/physics">physics</a>
+                  (2)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/rant?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/rant">rant</a>
+                  (7)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/release?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/release">release</a>
+                  (4)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/tip?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/tip">tip</a>
+                  (11)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/visualstudio?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/visualstudio">visualstudio</a>
+                  (5)
+          </li><li>
+            <span class="metainfo">
+              <a href="http://lolengine.net/blog/category/windows?format=rss">
+                rss</a>
+            </span>
+            <a href="http://lolengine.net/blog/category/windows">windows</a>
+                  (4)
+          </li>
+        </ul>
+    </div>
+  </div>
+
+      <div id="blog-main"><span class="noprint sharing-buttons" style="margin-left:6px"><iframe id="twitter-widget-0" scrolling="no" frameborder="0" allowtransparency="true" class="twitter-share-button twitter-share-button-rendered twitter-tweet-button" title="Twitter Tweet Button" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/tweet_button.a9003d9964444592507bbb36b98c709b.en.html" style="position: static; visibility: visible; width: 61px; height: 20px;"></iframe><script src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/widgets.js" type="text/javascript"></script><iframe allowtransparency="true" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/like.html" style="border:none;overflow:hidden;width:112px;height:21px" scrolling="no" frameborder="0"></iframe></span>
+          <div class="blog-post">
+    <h1 class="blog-title" id="2013/09/18/beautiful-maths-quaternion-from-vectors">Beautiful maths simplification: quaternion from two vectors
+    <a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#2013/09/18/beautiful-maths-quaternion-from-vectors" title="Link here"> ¶</a></h1>
+    <div class="blog-body">
+      <p>
+In this article I would like to explain the thought process behind the derivation of a widely used formula: <strong>finding a quaternion representing the rotation between two 3D vectors</strong>. Nothing really new, but hopefully a few ideas could be reused at other times.
+</p>
+<p>
+<strong>Note</strong>: the routine presented here is incomplete on purpose. For a version that can be used in production code, see the next article instead, <em><a href="http://lolengine.net/blog/2014/02/24/quaternion-from-two-vectors-final">Quaternion from two vectors: the final version</a></em>.
+</p>
+<h2 id="Naivemethod">Naive method<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#Naivemethod" title="Link here"> ¶</a></h2>
+<p>
+A rotation is best visualised using a rotation axis and an angle. Except in degenerate cases, the rotation axis can be obtained by computing the cross product of the two original vectors:
+</p>
+<p>
+<img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/maths-rotation.png">
+</p>
+<p>
+Then the angle can be obtained using the properties of the cross product and/or the dot product:
+</p>
+<img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/3392cb9cb09b7674a03abe2bd44c9bb61cfaf05d.png" alt="\begin{align}
+\boldsymbol{u} . \boldsymbol{v} &amp;= |\boldsymbol{u}| . |\boldsymbol{v}| . \cos\theta \\
+||\boldsymbol{u} \times \boldsymbol{v}|| &amp;= |\boldsymbol{u}| . |\boldsymbol{v}| . |\sin\theta|
+\end{align}
+"><p>
+Since θ is always between 0 and π, we only care about the dot product. This gives us some obvious code to create the quaternion (omitting corner cases such as <tt>θ = 0</tt> for clarity):
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> cos_theta <span class="o">=</span> dot<span class="p">(</span>normalize<span class="p">(</span>u<span class="p">),</span> normalize<span class="p">(</span>v<span class="p">));</span>
+    <span class="kt">float</span> angle <span class="o">=</span> acos<span class="p">(</span>cos_theta<span class="p">);</span>
+    vec3 w <span class="o">=</span> normalize<span class="p">(</span>cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">));</span>
+    <span class="k">return</span> quat<span class="o">::</span>fromaxisangle<span class="p">(</span>angle<span class="p">,</span> w<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><p>
+This is naive but it works. Googling for “quaternion from two vectors” shows <a class="ext-link" href="http://www.ogre3d.org/forums/viewtopic.php?f=10&amp;t=45076"><span class="icon">​</span>this forum post</a> and <a class="ext-link" href="http://stackoverflow.com/q/10236557/111461"><span class="icon">​</span>this SO question</a> where this method or a variation thereof is suggested.
+</p>
+<h2 id="Lookingunderthehood">Looking under the hood<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#Lookingunderthehood" title="Link here"> ¶</a></h2>
+<p>
+Let’s have a look at what happens when building the quaternion from an axis and an angle:
+</p>
+<img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/972b6a5c6de8778942a85d6551ff7634038de683.png" alt="$$ q = \cos\frac{\theta}{2} + \boldsymbol{i}\sin\frac{\theta}{2}v_x + \boldsymbol{j}\sin\frac{\theta}{2}v_y + \boldsymbol{k}\sin\frac{\theta}{2}v_z $$
+"><p>
+This means the code for <tt>quat::fromaxisangle</tt> would look somewhat like this:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromaxisangle<span class="p">(</span><span class="kt">float</span> angle<span class="p">,</span> vec3 axis<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> half_sin <span class="o">=</span> sin<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> angle<span class="p">);</span>
+    <span class="kt">float</span> half_cos <span class="o">=</span> cos<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> angle<span class="p">);</span>
+    <span class="k">return</span> <span class="nf">quat</span><span class="p">(</span>half_cos<span class="p">,</span>
+                half_sin <span class="o">*</span> axis<span class="p">.</span>x<span class="p">,</span>
+                half_sin <span class="o">*</span> axis<span class="p">.</span>y<span class="p">,</span>
+                half_sin <span class="o">*</span> axis<span class="p">.</span>z<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><h2 id="Avoidingtrigonometry">Avoiding trigonometry<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#Avoidingtrigonometry" title="Link here"> ¶</a></h2>
+<p>
+If you read Iñigo Quilez’s recent article about <a class="ext-link" href="http://www.iquilezles.org/www/articles/noacos/noacos.htm"><span class="icon">​</span>avoiding trigonometry</a> you’ll have probably frowned at the fact that we computed θ from cos(θ), then computed sin(θ/2) and cos(θ/2).
+</p>
+<p>
+Indeed, it happens that there is a <strong>much simpler way</strong> to do it; the <a class="ext-link" href="https://en.wikipedia.org/wiki/Double-angle_formula#Double-angle.2C_triple-angle.2C_and_half-angle_formulae"><span class="icon">​</span>half-angle formulas</a> from precalculus tell us the following:
+</p>
+<img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/f4113671369abf13004c271454a8686b5e934515.png" alt="\begin{align}
+\sin\frac{\theta}{2} &amp;= \sqrt{\frac{1 - \cos\theta}{2}} \\
+\cos\frac{\theta}{2} &amp;= \sqrt{\frac{1 + \cos\theta}{2}}
+\end{align}
+"><p>
+This allows us to simplify our quaternion creation code:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> cos_theta <span class="o">=</span> dot<span class="p">(</span>normalize<span class="p">(</span>u<span class="p">),</span> normalize<span class="p">(</span>v<span class="p">));</span>
+    <span class="kt">float</span> half_cos <span class="o">=</span> sqrt<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.f</span> <span class="o">+</span> cos_theta<span class="p">));</span>
+    <span class="kt">float</span> half_sin <span class="o">=</span> sqrt<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.f</span> <span class="o">-</span> cos_theta<span class="p">));</span>
+    vec3 w <span class="o">=</span> normalize<span class="p">(</span>cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">));</span>
+    <span class="k">return</span> <span class="nf">quat</span><span class="p">(</span>half_cos<span class="p">,</span>
+                half_sin <span class="o">*</span> w<span class="p">.</span>x<span class="p">,</span>
+                half_sin <span class="o">*</span> w<span class="p">.</span>y<span class="p">,</span>
+                half_sin <span class="o">*</span> w<span class="p">.</span>z<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><p>
+This is pretty nice. By using well known trigonometry formulas, we got rid of all trigonometry function calls!
+</p>
+<h2 id="Avoidingsquareroots">Avoiding square roots<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#Avoidingsquareroots" title="Link here"> ¶</a></h2>
+<p>
+It happens that we can do slightly better. Note that we normalize three vectors: <tt>u</tt>, <tt>v</tt> and <tt>cross(u, v)</tt>. That’s three square roots. The thing is, we already know the norm of <tt>w</tt> through this formula:
+</p>
+<img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/b1e3fb7f76781d8c31a9a40391570d97ab770da0.png" alt="$$||\boldsymbol{u} \times \boldsymbol{v}|| = |\boldsymbol{u}| . |\boldsymbol{v}| . |\sin\theta|$$
+"><p>
+And we know <tt>sin(θ)</tt> from precalculus again:
+</p>
+<img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/fd77406133709a556fc015cf9080ef57c830cc3b.png" alt="$$\sin\theta = 2 \sin\frac{\theta}{2} \cos\frac{\theta}{2}$$
+"><p>
+Also, using the fact that <tt>sqrt(a)sqrt(b) = sqrt(ab)</tt> lets us perform one less square root.
+</p>
+<p>
+We can therefore come up with the following performance improvement:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> norm_u_norm_v <span class="o">=</span> sqrt<span class="p">(</span>sqlength<span class="p">(</span>u<span class="p">)</span> <span class="o">*</span> sqlength<span class="p">(</span>v<span class="p">));</span>
+    <span class="kt">float</span> cos_theta <span class="o">=</span> dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> norm_u_norm_v<span class="p">;</span>
+    <span class="kt">float</span> half_cos <span class="o">=</span> sqrt<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.f</span> <span class="o">+</span> cos_theta<span class="p">));</span>
+    <span class="kt">float</span> half_sin <span class="o">=</span> sqrt<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.f</span> <span class="o">-</span> cos_theta<span class="p">));</span>
+    vec3 w <span class="o">=</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> <span class="p">(</span>norm_u_norm_v <span class="o">*</span> <span class="mf">2.f</span> <span class="o">*</span> half_sin <span class="o">*</span> half_cos<span class="p">);</span>
+    <span class="k">return</span> <span class="nf">quat</span><span class="p">(</span>half_cos<span class="p">,</span>
+                half_sin <span class="o">*</span> w<span class="p">.</span>x<span class="p">,</span>
+                half_sin <span class="o">*</span> w<span class="p">.</span>y<span class="p">,</span>
+                half_sin <span class="o">*</span> w<span class="p">.</span>z<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><p>
+Oh wait! We divide by <tt>sin(θ/2)</tt> to compute <tt>w</tt>, then we multiply by <tt>sin(θ/2)</tt> again. This means we don’t even need that variable, and we can simplify even further:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> norm_u_norm_v <span class="o">=</span> sqrt<span class="p">(</span>sqlength<span class="p">(</span>u<span class="p">)</span> <span class="o">*</span> sqlength<span class="p">(</span>v<span class="p">));</span>
+    <span class="kt">float</span> cos_theta <span class="o">=</span> dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> norm_u_norm_v<span class="p">;</span>
+    <span class="kt">float</span> half_cos <span class="o">=</span> sqrt<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.f</span> <span class="o">+</span> cos_theta<span class="p">));</span>
+    vec3 w <span class="o">=</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> <span class="p">(</span>norm_u_norm_v <span class="o">*</span> <span class="mf">2.f</span> <span class="o">*</span> half_cos<span class="p">);</span>
+    <span class="k">return</span> <span class="nf">quat</span><span class="p">(</span>half_cos<span class="p">,</span> w<span class="p">.</span>x<span class="p">,</span> w<span class="p">.</span>y<span class="p">,</span> w<span class="p">.</span>z<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><p>
+This is more or less the code used by the <a class="ext-link" href="https://bitbucket.org/sinbad/ogre/src/9db75e3ba05c/OgreMain/include/OgreVector3.h#cl-651"><span class="icon">​</span>Ogre3D engine in OgreVector3.h</a>, except they perform an additional normalisation step on the final result. This is mathematically useless, but due to numerical stability issues, it is probably safe to do so nonetheless.
+</p>
+<p>
+This final normalisation step is actually an opportunity to simplify the code even further.
+</p>
+<h2 id="ImprovingonOgre3D">Improving on Ogre3D<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#ImprovingonOgre3D" title="Link here"> ¶</a></h2>
+<p>
+We are down to two square roots and four divisions, plus quite a few mul/adds. Depending on the platform that we are running on, it is possible to simplify even further and improve performance. For instance, on many SIMD architectures, normalising a quaternion can be very fast.
+</p>
+<p>
+This is the code we get if we multiply every component of the quaternion by <tt>2.f * half_cos</tt> and let <tt>normalize()</tt> do the rest of the job:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> norm_u_norm_v <span class="o">=</span> sqrt<span class="p">(</span>sqlength<span class="p">(</span>u<span class="p">)</span> <span class="o">*</span> sqlength<span class="p">(</span>v<span class="p">));</span>
+    <span class="kt">float</span> cos_theta <span class="o">=</span> dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> norm_u_norm_v<span class="p">;</span>
+    <span class="kt">float</span> half_cos <span class="o">=</span> sqrt<span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.f</span> <span class="o">+</span> cos_theta<span class="p">));</span>
+    vec3 w <span class="o">=</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> norm_u_norm_v<span class="p">;</span>
+    <span class="k">return</span> <span class="nf">normalize</span><span class="p">(</span>quat<span class="p">(</span><span class="mf">2.f</span> <span class="o">*</span> half_cos <span class="o">*</span> half_cos<span class="p">,</span> w<span class="p">.</span>x<span class="p">,</span> w<span class="p">.</span>y<span class="p">,</span> w<span class="p">.</span>z<span class="p">));</span>
+<span class="p">}</span>
+</pre></div><p>
+Now <tt>half_cos</tt> only appears in its squared form, and since it comes from a square root, we can simply omit that square root:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> norm_u_norm_v <span class="o">=</span> sqrt<span class="p">(</span>sqlength<span class="p">(</span>u<span class="p">)</span> <span class="o">*</span> sqlength<span class="p">(</span>v<span class="p">));</span>
+    <span class="kt">float</span> cos_theta <span class="o">=</span> dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> norm_u_norm_v<span class="p">;</span>
+    vec3 w <span class="o">=</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">)</span> <span class="o">/</span> norm_u_norm_v<span class="p">;</span>
+    <span class="k">return</span> <span class="nf">normalize</span><span class="p">(</span>quat<span class="p">(</span><span class="mf">1.f</span> <span class="o">+</span> cos_theta<span class="p">,</span> w<span class="p">.</span>x<span class="p">,</span> w<span class="p">.</span>y<span class="p">,</span> w<span class="p">.</span>z<span class="p">));</span>
+<span class="p">}</span>
+</pre></div><p>
+And using the same reasoning we can multiply every quaternion component by <tt>norm_u_norm_v</tt>:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> norm_u_norm_v <span class="o">=</span> sqrt<span class="p">(</span>sqlength<span class="p">(</span>u<span class="p">)</span> <span class="o">*</span> sqlength<span class="p">(</span>v<span class="p">));</span>
+    vec3 w <span class="o">=</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">);</span>
+    quat q <span class="o">=</span> quat<span class="p">(</span>norm_u_norm_v <span class="o">+</span> dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">),</span> w<span class="p">.</span>x<span class="p">,</span> w<span class="p">.</span>y<span class="p">,</span> w<span class="p">.</span>z<span class="p">);</span>
+    <span class="k">return</span> <span class="nf">normalize</span><span class="p">(</span>q<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><p>
+We are still doing two square roots and four divisions, some of which are hidden in <tt>normalize()</tt>, but the code is considerably shorter now.
+</p>
+<h2 id="Finalform">Final form<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#Finalform" title="Link here"> ¶</a></h2>
+<p>
+<img width="300px" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/final-form.jpeg">
+</p>
+<p>
+If <tt>u</tt> and <tt>v</tt> can be enforced to be unit vectors, <tt>norm_u_norm_v</tt> can be omitted and simply replaced with <tt>1.0f</tt>:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    vec3 w <span class="o">=</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">);</span>
+    quat q <span class="o">=</span> quat<span class="p">(</span><span class="mf">1.f</span> <span class="o">+</span> dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">),</span> w<span class="p">.</span>x<span class="p">,</span> w<span class="p">.</span>y<span class="p">,</span> w<span class="p">.</span>z<span class="p">);</span>
+    <span class="k">return</span> <span class="nf">normalize</span><span class="p">(</span>q<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><p>
+Isn’t it beautiful, considering the <tt>sin()</tt>, <tt>cos()</tt> and <tt>acos()</tt> ridden mess we started with?
+</p>
+<p>
+This algorithm can be found all over the Internet, but I do not know who first came up with it. Also, a lot of 3D engines (both publicly available and slightly more private) could benefit from it.
+</p>
+<h2 id="Update06012014">Update (06/01/2014)<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#Update06012014" title="Link here"> ¶</a></h2>
+<p>
+In the comments below, Michael Norel provides the following improvement to the non-unit version. Since the values <tt>d = dot(u, v)</tt> and <tt>w = cross(u, v)</tt> are computed no matter what, the value <tt>sqlength(u) * sqlength(v)</tt> could be computed in a different way, *i.e.* <tt>d * d + sqlength(w)</tt>. The following code does at least three multiplications less:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    vec3 w <span class="o">=</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">);</span>
+    quat q <span class="o">=</span> quat<span class="p">(</span>dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">),</span> w<span class="p">.</span>x<span class="p">,</span> w<span class="p">.</span>y<span class="p">,</span> w<span class="p">.</span>z<span class="p">);</span>
+    q<span class="p">.</span>w <span class="o">+=</span> length<span class="p">(</span>q<span class="p">);</span>
+    <span class="k">return</span> <span class="nf">normalize</span><span class="p">(</span>q<span class="p">);</span>
+<span class="p">}</span>
+</pre></div><p>
+Also, Marc B. Reynolds notes that, in the unit version, the final normalisation factor is <tt>sqrt((1 + dot(u, v))² + sqlength(cross(u, v)))</tt> which reduces to <tt>sqrt(2 + 2 dot(u, v))</tt> thanks to the <tt>sin² + cos²</tt> identity. It leads to the following possibly improved version:
+</p>
+<div class="code"><pre>quat quat<span class="o">::</span>fromtwovectors<span class="p">(</span>vec3 u<span class="p">,</span> vec3 v<span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">float</span> m <span class="o">=</span> sqrt<span class="p">(</span><span class="mf">2.f</span> <span class="o">+</span> <span class="mf">2.f</span> <span class="o">*</span> dot<span class="p">(</span>u<span class="p">,</span> v<span class="p">));</span>
+    vec3 w <span class="o">=</span> <span class="p">(</span><span class="mf">1.f</span> <span class="o">/</span> m<span class="p">)</span> <span class="o">*</span> cross<span class="p">(</span>u<span class="p">,</span> v<span class="p">);</span>
+    <span class="k">return</span> <span class="nf">quat</span><span class="p">(</span><span class="mf">0.5f</span> <span class="o">*</span> m<span class="p">,</span> w<span class="p">.</span>x<span class="p">,</span> w<span class="p">.</span>y<span class="p">,</span> w<span class="p">.</span>z<span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+        
+    </div>
+    <ul class="metainfo">
+      <li class="metadates">Posted: 2013-09-18 18:13
+        <span class="metaupdated">
+          (Updated: 2014-06-01 11:32)
+        </span>
+      </li>
+      <li class="metaauthor">Author:
+        <a href="http://lolengine.net/blog/author/sam">sam</a> </li>
+      <li class="metacategories">Categories:
+          <a href="http://lolengine.net/blog/category/maths">maths</a>
+          <a href="http://lolengine.net/blog/category/optim">optim</a>
+      </li>
+    </ul>
+  </div>
+    
+    <div id="attachments">
+        <h3>Attachments <span class="trac-count">(2)</span></h3>
+        <div>
+          <ul>
+              <li>
+    <a href="http://lolengine.net/attachment/blog/2013/09/18/beautiful-maths-quaternion-from-vectors/maths-rotation.png" title="View attachment">maths-rotation.png</a><a href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/maths-rotation.png" class="trac-rawlink" title="Download">​</a>
+       (<span title="8684 bytes">8.5 KB</span>) -
+      added by <em>sam</em> <a class="timeline" href="http://lolengine.net/timeline?from=2013-09-18T18%3A15%3A12%2B02%3A00&amp;precision=second" title="See timeline at Sep 18, 2013, 6:15:12 PM">3 years ago</a>.
+              </li>
+              <li>
+    <a href="http://lolengine.net/attachment/blog/2013/09/18/beautiful-maths-quaternion-from-vectors/final-form.jpeg" title="View attachment">final-form.jpeg</a><a href="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/final-form.jpeg" class="trac-rawlink" title="Download">​</a>
+       (<span title="50462 bytes">49.3 KB</span>) -
+      added by <em>sam</em> <a class="timeline" href="http://lolengine.net/timeline?from=2013-09-18T18%3A29%3A30%2B02%3A00&amp;precision=second" title="See timeline at Sep 18, 2013, 6:29:30 PM">3 years ago</a>.
+              </li>
+          </ul>
+          <p>
+            Download all attachments as: <a rel="nofollow" href="http://lolengine.net/zip-attachment/blog/2013/09/18/beautiful-maths-quaternion-from-vectors/">.zip</a>
+          </p>
+        </div>
+    </div>
+
+          <div id="comments">
+            <h2 id="comment-header">Comments<a class="anchor" href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-header" title="Link here"> ¶</a></h2>
+              <div class="blog-comment odd" id="comment-1">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-1">
+                      1.</a>
+                    anonymous --
+                    2013-11-14 10:12</div>
+                <div class="comment-body"><p>
+Thank you for sharing this!! It is both beautiful and amazing. Well done.
+</p>
+</div>
+              </div><div class="blog-comment even" id="comment-2">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-2">
+                      2.</a>
+                    ponce --
+                    2014-01-23 11:18</div>
+                <div class="comment-body"><p>
+Toujours intéressant ces articles :)
+</p>
+</div>
+              </div><div class="blog-comment odd" id="comment-3">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-3">
+                      3.</a>
+                    minorlogic@yahoo.com --
+                    2014-05-09 13:02</div>
+                <div class="comment-body"><p>
+The complete version from nonunit vectors looks like
+</p>
+<p>
+quat quat::fromtwovectors(vec3 u, vec3 v)
+{
+</p>
+<blockquote>
+<p>
+vec3 w = cross(u, v);
+quat q = quat(dot(u, v), w.x, w.y, w.z);
+q.w += q.magnitude();
+return normalize(q);
+</p>
+</blockquote>
+<p>
+}
+</p>
+<ol><li>Faster. 4 muls for quaternion magnitude instead of 6 muls for vectors magnitude.
+</li><li>Numerical more stable (produce less roundoff error) than use of vectors length.
+</li></ol><p>
+Derivation of original method can be found  <a class="ext-link" href="http://www.euclideanspace.com/maths/algebra/vectors/angleBetween/minorlogic.htm"><span class="icon">​</span>http://www.euclideanspace.com/maths/algebra/vectors/angleBetween/minorlogic.htm</a>
+</p>
+</div>
+              </div><div class="blog-comment even" id="comment-4">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-4">
+                      4.</a>
+                    marc.b.reynolds@gmail.com --
+                    2014-05-28 11:25</div>
+                <div class="comment-body"><p>
+This reduces even more. Assuming unit vector inputs and ignoring the degenerate case:
+</p>
+<pre class="wiki">vec4 getRot(vec3 a, vec3 b)
+{
+  vec4 r
+  float m = sqrt(1+dot(a,b));
+  r.xyz = (1/m)*cross(a,b);
+  r.w   = 0.5*m;
+}
+</pre></div>
+              </div><div class="blog-comment odd" id="comment-5">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-5">
+                      5.</a>
+                    anonymous --
+                    2014-05-28 11:34</div>
+                <div class="comment-body"><p>
+Opps: don't see how to edit.  should be m = sqrt(2*(1+dot(a,b)))
+</p>
+</div>
+              </div><div class="blog-comment even" id="comment-7">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-7">
+                      7.</a>
+                    sam --
+                    2014-05-28 17:16</div>
+                <div class="comment-body"><p>
+@marc.b.reynolds — sorry, this blog comment system is quite mediocre. But I think you need <tt>m = sqrt(2 + dot(a,b));</tt> because that’s the final normalisation value, and then <tt>r.w = sqrt(1 + dot(a,b)) / m;</tt> will mean one square root too much.
+</p>
+</div>
+              </div><div class="blog-comment odd" id="comment-8">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-8">
+                      8.</a>
+                    marc.b.reynolds@gmail.com --
+                    2014-05-29 11:54</div>
+                <div class="comment-body"><p>
+Sorry for the formatting.  Where am I wrong?
+</p>
+<p>
+r  = ab*
+</p>
+<p>
+r  = cross(a,b) + dot(a,b)
+</p>
+<p>
+r  = sin(t)U + cos(t)
+</p>
+<p>
+q  = sqrt(r)
+</p>
+<p>
+q  = sin(t/2)U + cos(t/2)
+</p>
+<p>
+w  = cos(t) = dot(a,b)
+</p>
+<p>
+s  = sin(t/2)/sin(t)
+</p>
+<p>
+s  = sqrt[(1-w))/2] / sqrt(1-ww)
+</p>
+<p>
+s  = 1/sqrt(2+2w)
+</p>
+<p>
+w' = cos(t/2)
+</p>
+<p>
+w' = sqrt[(1+cos(t))/2]
+</p>
+<p>
+w' = sqrt[(1+w)/2]
+</p>
+<p>
+w' = sqrt[2+2w]/2
+</p>
+<p>
+m  = sqrt(2+2w) = sqrt(2+2dot(a,b))
+</p>
+<p>
+q  = cross(a,b)/m + m/2
+</p>
+</div>
+              </div><div class="blog-comment even" id="comment-9">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-9">
+                      9.</a>
+                    sam --
+                    2014-05-29 12:23</div>
+                <div class="comment-body"><p>
+@marc.b.reynolds The problem is that this final quaternion is not a unit quaternion. Its squared length is <tt>1/m² + m²/4</tt> and that’s <tt>1</tt> only when <tt>m = sqrt(2)</tt>
+</p>
+</div>
+              </div><div class="blog-comment odd" id="comment-10">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-10">
+                      10.</a>
+                    marc.b.reynolds@gmail.com --
+                    2014-05-30 09:48</div>
+                <div class="comment-body"><p>
+As a simple example:
+</p>
+<p>
+a = (1,0,0)
+</p>
+<p>
+b = (x,y,0)
+</p>
+<p>
+r = cross(a,b)+dot(a,b) = (0,0,y) + x
+</p>
+<p>
+t = sqrt(2+2x) = sqrt(2)sqrt(1+x)
+</p>
+<p>
+q = (0,0,y/t) + t/2
+</p>
+<p>
+q = (0,0,y/(sqrt(2)sqrt(1+x)) + sqrt(1+x)/sqrt(2)
+</p>
+<p>
+Computing 'q' by normalization yields a normalization factor of sqrt[(1+x)(1+x)+yy] = sqrt(1+2x+xx+yy) = sqrt(2+2x)
+</p>
+<p>
+q = (0,0,y)/sqrt(2+2x) + (1+x)/sqrt(2+2x)
+</p>
+<p>
+q = (0,0,y)/(sqrt(2)(sqrt(1+x)) + sqrt(1+x)/sqrt(2)
+</p>
+<p>
+So the two methods are the same.  Allowing 'a' &amp; 'b' to be arbitrary unit vectors doesn't change the problem.
+</p>
+</div>
+              </div><div class="blog-comment even" id="comment-11">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-11">
+                      11.</a>
+                    sam --
+                    2014-05-30 11:16</div>
+                <div class="comment-body"><p>
+Oh, you’re absolutely right. I was making the same mistake from the beginning. Sorry for wasting your time, I’ll add your suggestion to the article!
+</p>
+</div>
+              </div><div class="blog-comment odd" id="comment-12">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-12">
+                      12.</a>
+                    marc.b.reynolds@gmail.com --
+                    2014-06-04 07:48</div>
+                <div class="comment-body"><p>
+It can't be said that I was being clear and concise. The interesting part here is the square root of a unit quaterion which can be useful elsewhere.
+</p>
+<p>
+The hateful remaining bit of the unit version is the division which can be removed if your language and hardware supports either 1/sqrt(x) or an approximation, then use x/sqrt(x) = sqrt(x) to complete.
+</p>
+<pre class="wiki">quat quat::fromtwovectors(vec3 u, vec3 v)
+{
+  float d = 1+dot(u,v);
+  float m = rsqrt(d+d);
+  vec3  w = m * cross(u, v);
+  return quat(d*m, w.x, w.y, w.z);
+}
+</pre></div>
+              </div><div class="blog-comment even" id="comment-13">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-13">
+                      13.</a>
+                    gfrodo --
+                    2014-06-04 22:30</div>
+                <div class="comment-body"><p>
+in the non-unit version you can even reduce 3 multiplications, because sqlength(w) has to calculated twice: first time in length(q), the second time in normalize(q).
+</p>
+</div>
+              </div><div class="blog-comment odd" id="comment-14">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-14">
+                      14.</a>
+                    gfrodo --
+                    2014-06-04 22:37</div>
+                <div class="comment-body"><p>
+Here is the optimized code:
+</p>
+<pre class="wiki">quat quat::fromtwovectors(vec3 u, vec3 v)
+{
+    vec3 w = cross(u, v);
+    quat q = quat(dot(u, v), w.x, w.y, w.z);
+    float l=sqlength(w);
+    q.w += sqrt(q.w*q.w+l);
+    return q*(1/sqrt(q.w*q.w+l));
+    //normally one '/' and 4 '*' is faster than 4 '/'
+}
+</pre></div>
+              </div><div class="blog-comment even" id="comment-15">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-15">
+                      15.</a>
+                    gfrodo --
+                    2014-06-04 22:58</div>
+                <div class="comment-body"><p>
+additionally, if l is very small and dot(u,v) is negative, you can add a special treatment for opposite vectors (where you can drop one sqrt)
+</p>
+</div>
+              </div><div class="blog-comment odd" id="comment-16">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-16">
+                      16.</a>
+                    gfrodo --
+                    2014-06-04 23:22</div>
+                <div class="comment-body"><p>
+according to the other article here the version checking for 180 degree:
+</p>
+<pre class="wiki">quat quat::fromtwovectors(vec3 u, vec3 v)
+{
+    vec3 w = cross(u, v);
+    float l=sqlength(w);
+    float real_part=dot(u, v);
+    if(l &lt; 1.6e-12f &amp;&amp; real_part &lt; 0 )
+    {
+        w = abs(u.x) &gt; abs(u.z) ? vec3(-u.y, u.x, 0.f) / sqrt(u.y*u.y + u.x*u.x)
+                                : vec3(0.f, -u.z, u.y) / sqrt(u.y*u.y + u.z*u.z);
+        return quat(0, w.x, w.y, w.z);
+    }
+    real_part += sqrt(real_part*real_part + l);
+    return quat(real_part, w.x, w.y, w.z) * (1 / sqrt(real_part*real_part + l));
+}
+</pre><p>
+Maybe the very special case of opposite vectors can be even more optimized, but possible would be never called.
+</p>
+</div>
+              </div><div class="blog-comment even" id="comment-19">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-19">
+                      19.</a>
+                    minorlogic@yahoo.com --
+                    2014-06-17 18:03</div>
+                <div class="comment-body"><p>
+@gfrodo your version from "14" is identical to version from "3" , instead of implicit cache of x*x+y*y+z*z.
+</p>
+</div>
+              </div><div class="blog-comment odd" id="comment-20">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-20">
+                      20.</a>
+                    gfrodo --
+                    2014-06-24 15:00</div>
+                <div class="comment-body"><p>
+@minorlogic: yes, you are right. i wanted to be sure, that the compiler doesn't compute x*x+y*y+z*z twice. i think we do this optimizations because we don't trust the compiler to do it.
+</p>
+</div>
+              </div><div class="blog-comment even" id="comment-21">
+                <div class="comment-info">
+                    <a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#comment-21">
+                      21.</a>
+                    shiqi ai --
+                    2016-04-17 16:22</div>
+                <div class="comment-body"><p>
+its amazing .. thank you for your sharing.
+</p>
+</div>
+              </div>
+          </div>
+          <div id="newcomment">
+            <h3>Add New Comment</h3>
+            <form action="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#preview" method="post"><div><input type="hidden" name="__FORM_TOKEN" value="ca714494e04a3ad2aade3797"></div>
+              <fieldset>
+                  <div class="field">
+                    <label for="comment">Comment (you may use
+                      <a tabindex="42" href="http://lolengine.net/wiki/WikiFormatting">WikiFormatting</a>
+                      here):
+                    </label><br>
+                    <div class="wikitoolbar"><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="strong" title="Bold text: &#39;&#39;&#39;Example&#39;&#39;&#39;" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="em" title="Italic text: &#39;&#39;Example&#39;&#39;" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="heading" title="Heading: == Example ==" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="link" title="Link: [http://www.example.com/ Example]" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="code" title="Code block: {{{ example }}}" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="hr" title="Horizontal rule: ----" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="np" title="New paragraph" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="br" title="Line break: [[BR]]" tabindex="400"></a><a href="http://lolengine.net/blog/2013/09/18/beautiful-maths-quaternion-from-vectors#" id="img" title="Image: [[Image()]]" tabindex="400"></a></div><textarea class="wikitext" id="comment" name="comment" cols="80" rows="8"></textarea>
+                    <p> <strong>Note</strong>: the spam filter is extremely sensitive; don't worry! Even if it is detected as spam, your comment will be manually approved. </p>
+                  </div>
+                  <div class="field">
+                    <label for="author">Your email or username:</label>
+                      <br>
+                      <input id="author" type="text" name="author" size="30" value="anonymous">
+                  </div>
+                <div class="buttons">
+                  <input type="submit" name="previewcomment" value="Preview comment">
+                  <input size="30" type="submit" name="submitcomment" value="Add comment">
+                  <input type="hidden" name="action" value="comment">
+                  <input type="submit" name="cancelcomment" value="Cancel">
+                </div>
+                <script type="text/javascript" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/wikitoolbar.js"></script>
+              </fieldset>
+            </form>
+          </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+        jQuery.loadStyleSheet("/pygments/monokai.css", "text/css");
+    </script>
+    </div>
+    <div id="footer" lang="en" xml:lang="en"><hr>
+      <a id="tracpowered" href="http://trac.edgewall.org/"><img src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/trac_logo_mini.png" height="30" width="107" alt="Trac Powered"></a>
+      <p class="left">Powered by <a href="http://lolengine.net/about"><strong>Trac 1.0.2</strong></a><br>
+        By <a href="http://www.edgewall.org/">Edgewall Software</a>.</p>
+      <p class="right">Coming soon!</p>
+    </div>
+      <div id="sitefooter">
+      </div>
+    </div>
+  
+<div id="gleeBox" style="display:none" class="GleeThemeDefault gleeMediumSize"><input type="text" id="gleeSearchField" value="" autocomplete="off" class="ac_input GleeThemeDefault gleeMediumSize"><div id="gleeSub"><div id="gleeSubText"></div><div id="gleeSearchActivity"></div><div id="gleeSubURL"></div></div></div><iframe id="rufous-sandbox" scrolling="no" frameborder="0" allowtransparency="true" allowfullscreen="true" style="position: absolute; visibility: hidden; display: none; width: 0px; height: 0px; padding: 0px; border: none;" src="./Blog_ Beautiful maths simplification_ quaternion from two vectors – Lol Engine_files/saved_resource.html"></iframe></body><style type="text/css">/*This block of style rules is injected by gleeBox*/.GleeReaped { background-color: #f9f2a5 !important; outline: 1px dotted #818181 !important; } .GleeHL { -webkit-box-shadow: hsla(71, 89%, 70%, 1) -2px -2px 0px, hsla(71, 89%, 70%, 1)  2px -2px 0px, hsla(71, 100%, 45%, 1) -2px  2px 0px, hsla(71, 100%, 45%, 1)  2px  2px 0px, hsla(71, 100%, 80%, 1)  0px 0px 0px 3px, rgba(42, 35, 0, 0.8)  1px  1px 3px 3px !important; border-radius: 3px !important; color: #000 !important; outline: none !important; border: none !important; background: -webkit-gradient(linear, left bottom, left top, color-stop(0, hsla(71, 100%, 47%, 1)), color-stop(1, hsla(71, 89%, 70%, 1))) !important;} a.GleeHL, .GleeHL a {color: #000 !important;} input[type=checkbox].GleeHL, input[type=radio].GleeHL { outline: 5px solid hsla(71, 89%, 70%, 1) !important;}</style></html>
