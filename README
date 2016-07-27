@@ -16,27 +16,30 @@ Copy mknod.sh to your board.
 Edit device tree of your board to add mpu6050 sensor support. 
 Look in bcm2708-rpi-b.dts for reference. 
 
-Go to ./drv, add you cross compiler to Makefile.
+On the host computer: go to ./drv, add you cross compiler to Makefile.
 Run
 $ make
-Copy fast-mpu6050.ko to /lib/modules/<you kernel release>/extra on your board.
+Copy fast-mpu6050.ko to '/lib/modules/<your kernel release>/extra' on your board.
 
 On your board:
 Run
-$ depmod
+# depmod
 Reboot.
 After each reboot of your board you should run
-$ ./mknod.sh
+# ./mknod.sh
 in order to create /dev/mpu6050 node.
 
-Go to ./nav, add you cross compiler to Makefile.
+On the host: go to ./nav, add you cross compiler to Makefile.
 Run
 $ make
 Copy nav to your board.
 
+On the host:
 Run
 $ make PLATFORM=THIS
-This makes host version of nav to calculate trajectory.
+This makes the host version of nav. Use it to calculate trajectory. 
+Warning: this will rewrite cross-version of nav binary you've 
+compiled in previous step.
 
 How to run program:
 ===================
