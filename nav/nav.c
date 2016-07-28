@@ -154,25 +154,31 @@ int calculate (const char *fname)
         a - acceleration
         w - angular velocity
         v - linear velocity
+        r - position vector
+        s - orientation quaternion
         
-        *i - projection to i
+        *x - projection to x
         z_* - zero-point offset
-        *_ - previous value */
-
+        *_ - previous value
+        *0..*3 - quaternion coordinates */
     double ai, aj, ak;
     double wi, wj, wk;
     
     double z_ai, z_aj, z_ak;
     double z_wi, z_wj, z_wk;
 
-    double x_, y_, x, y;
+    double rx, ry, rz;
+    double rx_, ry_, rz_;
+    
+    double ax, ay, az;
+
+    double vx, vy, vz;
+    double vx_, vy_, vz_;
+    
     double u_, u;
     double v;
 
     double dt;
-
-    double ax, ay;
-    double vx, vy, vx_, vy_;
 
     /* orientation quaternion:
         s0 = Cos (PHY/2)
@@ -184,30 +190,19 @@ int calculate (const char *fname)
         and PHY is a rotation angle
         
         s0..3 represents rotation around the axis u of angle PHY */
-
     double s0, s1, s2, s3;
     double s0_, s1_, s2_, s3_;
 
-    /* default rotation */
-    s0_ = 1;
-    s1_ = s2_ = s3_ = 0;
-    
-    u_ = 0;
-    
-    vx_ = 0;
-    vy_ = 0;
-    x_ = 0;
-    y_ = 0;
-    
-    dt = 0.001;
+    double zi, zj, zk, g;
 
-    z_ai = z_aj = 0;
+    z_ai = z_aj = z_ak = 0;
     z_wi = z_wj = z_wk = 0;
 
     smpl_cnt = 0;
     clbr_cnt = calibration_time * SAMPLING_FREQUENCY;
 
-    while (1) {
+    /* calibration loop */
+    while (smpl_cnt < clbr_cnt) {
         rc = read (fd_in, &sample, sizeof (struct sample_t));
         if (rc == 0)
             break;
@@ -216,10 +211,6 @@ int calculate (const char *fname)
             return -1;
         }
     
-        smpl_cnt++;
-
-        /* print_sample (stdout, &sample); */
-
         ai = A_RAW_TO_SI (sample.ax);
         aj = A_RAW_TO_SI (sample.ay);
         ak = A_RAW_TO_SI (sample.az);
@@ -240,25 +231,97 @@ int calculate (const char *fname)
             180 degrees around the axe which is orthogonal to acceleration
             of gravity during the calibration process. */
 
-        if (smpl_cnt < clbr_cnt) {
-            z_ai += ai;
-            z_aj += aj;
-            z_wi += wi;
-            z_wj += wj;
-            z_wk += wk;
-            continue;
-        }
+        z_ai += ai;
+        z_aj += aj;
+        z_ak += ak;
+        z_wi += wi;
+        z_wj += wj;
+        z_wk += wk;
         
-        if (smpl_cnt == clbr_cnt) {
-            z_ai /= smpl_cnt;
-            z_aj /= smpl_cnt;
-            z_wi /= smpl_cnt;
-            z_wj /= smpl_cnt;
-            z_wk /= smpl_cnt;
+        smpl_cnt++;
+    }
+    
+    z_ai /= smpl_cnt;
+    z_aj /= smpl_cnt;
+    z_ak /= smpl_cnt;
+    z_wi /= smpl_cnt;
+    z_wj /= smpl_cnt;
+    z_wk /= smpl_cnt;
+        
+    /* Okay, suppose all of calibrations are done.
+        First we need to determine global axes x, y and z.
+
+        Suppose the sensor is placed not very accurate, so there are
+        non-zero projections of vector (-g) to the local axes i, j, k
+        (note that accelerometer shows (-g), not (g) vector).
+
+        Introduce global vector z as a unit vector opposite to gravity
+        vector g: z = (-g)/|g|
+
+        So there are non-zero angle between vectors k and z.
+
+        The initial state of the orientation quaternion s0..3 is
+        the rotation from z to k around z-cross-k vector.
+
+        Introduce the axes x and y as a vectors which obtained by
+        rotating vectors i and j with initial quaternion s0..3.
+
+        Let's calculate that. */
+    
+    g = sqrt ((z_ai * z_ai) + (z_aj * z_aj) + (z_ak * z_ak));
+    /* or g = PHYS_G (?) */
+
+    zi = z_ai / g;
+    zj = z_aj / g;
+    zk = z_ak / g;
+    
+    /* k has the coordinates 0, 0, 1 in the local system,
+        z has the coordinates zi, zj, zk in the local system.
+        To get transformation quaternion from ijk to xyz we need to
+        construct rotation quaternion from z to k. */
+    s0_ = zk; /* k dot z */
+    s0_ = sqrt (2. + 2. * s0_);
+
+    /* z cross k */
+    s1_ = zj;  
+    s2_ = -zi;
+    s3_ = 0.;
+
+    s1_ = (1. / s0_) * s1_;
+    s2_ = (1. / s0_) * s2_;
+    s3_ = (1. / s0_) * s3_;
+
+    s0_ = 0.5 * s0_;
+    /* quaternion is prepared */
+
+    vx_ = vy_ = vz_ = 0.;
+    rx_ = ry_ = rz_ = 0.;
+    
+    u_ = 0;
+    
+    dt = 1. / SAMPLING_FREQUENCY;
+
+    while (1) {
+        rc = read (fd_in, &sample, sizeof (struct sample_t));
+        if (rc == 0)
+            break;
+        if (rc < sizeof (struct sample_t)) {
+            fprintf (stderr, "Corrupted input file. Calculation not finished.\n");
+            return -1;
         }
+
+        /* print_sample (stdout, &sample); */
+
+        ai = A_RAW_TO_SI (sample.ax);
+        aj = A_RAW_TO_SI (sample.ay);
+        ak = A_RAW_TO_SI (sample.az);
+        wi = W_RAW_TO_SI (sample.gx);
+        wj = W_RAW_TO_SI (sample.gy);
+        wk = W_RAW_TO_SI (sample.gz);
         
         ai -= z_ai;
         aj -= z_aj;
+
         wi -= z_wi;
         wj -= z_wj;
         wk -= z_wk;
@@ -283,6 +346,7 @@ int calculate (const char *fname)
             in absolute coordinates */
         vx = vx_ + (ax * dt);
         vy = vy_ + (ay * dt);
+        vz = vz_ + (az * dt);
         
         /* correct velocity: still looks like a magic */
         v = sqrt (vx * vx + vy * vy);
@@ -291,22 +355,28 @@ int calculate (const char *fname)
         vy = v * sin (u);
         
         /* integrate acceleration two times to get absolute coordinates */
-        x  = x_ + vx_ * dt + 0.5 * ax * dt * dt;
-        y  = y_ + vy_ * dt + 0.5 * ay * dt * dt;
+        rx  = rx_ + vx_ * dt + 0.5 * ax * dt * dt;
+        ry  = ry_ + vy_ * dt + 0.5 * ay * dt * dt;
 
         /* prepare variables for the next iteration */
         u_ = u;
-        x_ = x;
-        y_ = y;
+
+        rx_ = rx;
+        ry_ = ry;
+        rz_ = rz;
+
         vx_ = vx;
         vy_ = vy;
+        vz_ = vz;
 
         s0_ = s0;
         s1_ = s1;
         s2_ = s2;
         s3_ = s3;
 
-        fprintf (fout, "%lf %lf\n", x, y);
+        fprintf (fout, "%lf %lf\n", rx, ry);
+        
+        smpl_cnt++;
     }
     
     fprintf (stdout, "----\ncount: %ld\n", smpl_cnt);
