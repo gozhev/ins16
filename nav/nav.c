@@ -163,17 +163,14 @@ int calculate (const char *fname)
     double ai, aj, ak;
     double wi, wj, wk;
     
-    double z_ai, z_aj, z_ak;
-    double z_wi, z_wj, z_wk;
-
     double ax, ay, az;
+    
+    double vx, vy, vz;
+    double vx_, vy_, vz_;
     
     double rx, ry, rz;
     double rx_, ry_, rz_;
 
-    double vx, vy, vz;
-    double vx_, vy_, vz_;
-    
     /* orientation quaternion:
         s0 = Cos (PHY/2)
         s1 = u * Sin (PHY/2)
@@ -188,7 +185,10 @@ int calculate (const char *fname)
     double s0_, s1_, s2_, s3_;
 
     double dt;
-
+    
+    double z_ai, z_aj, z_ak;
+    double z_wi, z_wj, z_wk;
+    
     z_ai = z_aj = z_ak = 0;
     z_wi = z_wj = z_wk = 0;
 
@@ -277,19 +277,20 @@ int calculate (const char *fname)
         To get transformation quaternion from ijk to xyz we need to
         construct rotation quaternion from z to k. See ref/math directory
         for more details. */
-//    s0_ = zk; /* k dot z */
-//    s0_ = sqrt (2. + 2. * s0_);
-//
-//    /* z cross k */
-//    s1_ = zj;  
-//    s2_ = -zi;
-//    s3_ = 0.;
-//
-//    s1_ = (1. / s0_) * s1_;
-//    s2_ = (1. / s0_) * s2_;
-//    s3_ = (1. / s0_) * s3_;
-//
-//    s0_ = 0.5 * s0_;
+    /* k dot z */
+    /*s0_ = zk; 
+    s0_ = sqrt (2. + 2. * s0_);*/
+
+    /* z cross k */
+    /*s1_ = zj;  
+    s2_ = -zi;
+    s3_ = 0.;
+
+    s1_ = (1. / s0_) * s1_;
+    s2_ = (1. / s0_) * s2_;
+    s3_ = (1. / s0_) * s3_;
+
+    s0_ = 0.5 * s0_;*/
 
     s0_ = 1.;
     s1_ = s2_ = s3_ = 0.;
@@ -318,15 +319,13 @@ int calculate (const char *fname)
         wj = W_RAW_TO_SI (sample.gy);
         wk = W_RAW_TO_SI (sample.gz);
         
-        ai -= z_ai;
-        aj -= z_aj;
-        ak -= z_ak;
+        ai = ai - z_ai;
+        aj = aj - z_aj;
+        ak = ak - z_ak; /*ak*0.35;*/
 
         wi -= z_wi;
         wj -= z_wj;
         wk -= z_wk;
-
-        /* TODO: place mechanical noise filter here */
 
         /* don't forget to run no-motion tests */
         
@@ -371,6 +370,14 @@ int calculate (const char *fname)
         ay = s2*q0 + s3*q1 + s0*q2 - s1*q3;
         az = s3*q0 - s2*q1 + s1*q2 + s0*q3;
 
+        /* TODO: place mechanical noise filter here */
+        if (fabs(ax) < 0.08)
+            ax = 0.;
+        if (fabs(ay) < 0.08)
+            ay = 0.;
+        if (fabs(az) < 0.08)
+            az = 0.;
+
         /* integrate acceleration one time to get velocity 
             in absolute coordinates */
         vx = vx_ + (ax * dt);
@@ -382,6 +389,8 @@ int calculate (const char *fname)
             hard link between orientation and velocity are take place. */
         double v;
         v = sqrt (vx * vx + vy * vy);
+
+        if (v < 0.001) v = 0.;
         
         vx = s1*s1 + s0*s0 - s3*s3 - s2*s2;
         vy = 2. * (s2*s1 + s3*s0);
@@ -410,7 +419,7 @@ int calculate (const char *fname)
         s2_ = s2;
         s3_ = s3;
 
-        fprintf (fout, "%lf %lf\n", rx, ry);
+        fprintf (fout, "%lf %lf %lf  %lf %lf %lf\n", rx, ry, v, ax, ay, az);
         
         smpl_cnt++;
     }

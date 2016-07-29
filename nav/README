@@ -1,17 +1,6 @@
-Compilation:
+Compilation & Installation:
 ------------
-Edit Makefile to add path to you cross compiler first.
-
-Compile host version:
-$ make PLATFORM=THIS
-
-Compile board (RPi or so) version:
-$ make
-
-Installation:
--------------
-Copy nav to board.
-After each reboot you should run mknod.sh to make /dev/mpu6050 node.
+see ../README
 
 Printing help:
 --------------
