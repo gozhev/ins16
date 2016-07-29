@@ -11,8 +11,8 @@ the previous plane version.
 
 If you still want to see something new, look at `nav/img/test6-e0-e1-diff.png`   
 (or see image at the and of this page). If I manually multiply projection  
-of g to axis k with some coefficient from zero to one, 
-I will be able to correct trajectory. But, for every test I need  
+of g to axis k with some coefficient from zero to one,   
+I will be able to correct trajectory. But, for every test I need   
 to pick up this number exclusively.  
 
 There is still lack of any smart filters.  
@@ -43,33 +43,33 @@ Look in `bcm2708-rpi-b.dts` for reference.
 
 On the host computer: go to `./drv`, add you cross compiler to Makefile.  
 Run  
-```bash 
+``` 
 $ make
 ```
 Copy fast-mpu6050.ko to `/lib/modules/<your kernel release>/extra` on your board.   
 
 On your board:  
 Run  
-```bash
+```
 # depmod
 ```
 Reboot.  
 After each reboot of your board you should run  
-```bash
+```
 # ./mknod.sh
 ```
 in order to create `/dev/mpu6050` node.  
 
 On the host: go to `./nav`, add you cross compiler to Makefile.  
 Run  
-```bash
+```
 $ make
 ```
 Copy nav to your board.  
 
 On the host:  
 Run  
-```bash
+```
 $ make PLATFORM=THIS
 ```
 This makes the host version of nav. Use it to calculate trajectory.  
