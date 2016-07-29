@@ -125,7 +125,6 @@ int main (int argc, char **argv)
     return 0;
 }
 
-
 int calculate (const char *fname)
 {
     int rc;
@@ -167,19 +166,14 @@ int calculate (const char *fname)
     double z_ai, z_aj, z_ak;
     double z_wi, z_wj, z_wk;
 
+    double ax, ay, az;
+    
     double rx, ry, rz;
     double rx_, ry_, rz_;
-    
-    double ax, ay, az;
 
     double vx, vy, vz;
     double vx_, vy_, vz_;
     
-    double u_, u;
-    double v;
-
-    double dt;
-
     /* orientation quaternion:
         s0 = Cos (PHY/2)
         s1 = u * Sin (PHY/2)
@@ -193,7 +187,7 @@ int calculate (const char *fname)
     double s0, s1, s2, s3;
     double s0_, s1_, s2_, s3_;
 
-    double zi, zj, zk, g;
+    double dt;
 
     z_ai = z_aj = z_ak = 0;
     z_wi = z_wj = z_wk = 0;
@@ -268,8 +262,11 @@ int calculate (const char *fname)
 
         Let's calculate that. */
     
+    double zi, zj, zk;
+    double g;
+
     g = sqrt ((z_ai * z_ai) + (z_aj * z_aj) + (z_ak * z_ak));
-    /* or g = PHYS_G (?) */
+    /* g = PHYS_G; */
 
     zi = z_ai / g;
     zj = z_aj / g;
@@ -278,26 +275,28 @@ int calculate (const char *fname)
     /* k has the coordinates 0, 0, 1 in the local system,
         z has the coordinates zi, zj, zk in the local system.
         To get transformation quaternion from ijk to xyz we need to
-        construct rotation quaternion from z to k. */
-    s0_ = zk; /* k dot z */
-    s0_ = sqrt (2. + 2. * s0_);
+        construct rotation quaternion from z to k. See ref/math directory
+        for more details. */
+//    s0_ = zk; /* k dot z */
+//    s0_ = sqrt (2. + 2. * s0_);
+//
+//    /* z cross k */
+//    s1_ = zj;  
+//    s2_ = -zi;
+//    s3_ = 0.;
+//
+//    s1_ = (1. / s0_) * s1_;
+//    s2_ = (1. / s0_) * s2_;
+//    s3_ = (1. / s0_) * s3_;
+//
+//    s0_ = 0.5 * s0_;
 
-    /* z cross k */
-    s1_ = zj;  
-    s2_ = -zi;
-    s3_ = 0.;
-
-    s1_ = (1. / s0_) * s1_;
-    s2_ = (1. / s0_) * s2_;
-    s3_ = (1. / s0_) * s3_;
-
-    s0_ = 0.5 * s0_;
+    s0_ = 1.;
+    s1_ = s2_ = s3_ = 0.;
     /* quaternion is prepared */
 
     vx_ = vy_ = vz_ = 0.;
     rx_ = ry_ = rz_ = 0.;
-    
-    u_ = 0;
     
     dt = 1. / SAMPLING_FREQUENCY;
 
@@ -321,6 +320,7 @@ int calculate (const char *fname)
         
         ai -= z_ai;
         aj -= z_aj;
+        ak -= z_ak;
 
         wi -= z_wi;
         wj -= z_wj;
@@ -330,17 +330,46 @@ int calculate (const char *fname)
 
         /* don't forget to run no-motion tests */
         
-        u = u_ + (wk * dt);
-/*
-        s0 = s0_ + 0.5 * dt * (- (s1_ * wi) - (s2_ * wj) - (s3_ * wk));
-        s1 = s1_ + 0.5 * dt * (+ (s0_ * wi) - (s3_ * wj) - (s2_ * wk));
+        /* integrate angular velocity to get new orientation quaternion */
+        double p0, p1, p2, p3;
+        double w;
+
+        w = sqrt (wi*wi + wj*wj + wk*wk);
+        p0 = cos (w * dt * 0.5);
+        p1 = sin (w * dt * 0.5) * wi * (1. / w);
+        p2 = sin (w * dt * 0.5) * wj * (1. / w);
+        p3 = sin (w * dt * 0.5) * wk * (1. / w);
+
+        s0 = s0_*p0 - s1_*p1 - s2_*p2 - s3_*p3;
+        s1 = s1_*p0 + s0_*p1 - s3_*p2 + s2_*p3;
+        s2 = s2_*p0 + s3_*p1 + s0_*p2 - s1_*p3;
+        s3 = s3_*p0 - s2_*p1 + s1_*p2 + s0_*p3;
+
+        /*s0 = s0_ + 0.5 * dt * (- (s1_ * wi) - (s2_ * wj) - (s3_ * wk));
+        s1 = s1_ + 0.5 * dt * (+ (s0_ * wi) - (s3_ * wj) + (s2_ * wk));
         s2 = s2_ + 0.5 * dt * (+ (s3_ * wi) + (s0_ * wj) - (s1_ * wk));
         s3 = s3_ + 0.5 * dt * (- (s2_ * wi) + (s1_ * wj) + (s0_ * wk));
-*/
+
+        double s = sqrt (s0*s0 + s1*s1 + s2*s2 + s3*s3);
+        s0 = s0 / s;
+        s1 = s1 / s;
+        s2 = s2 / s;
+        s3 = s3 / s;*/
 
         /* convert acceleration from local coordinates to global */
-        ax = ai * cos (u) - aj * sin (u);
-        ay = ai * sin (u) + aj * cos (u);
+
+        /* quaternion version: 
+            augmented acceleration is (0, ai, aj, ak)
+            conjugate of s is (s0, -s1, -s2, -s3) */
+        double q0, q1, q2, q3;
+        q0 = 0.*s0 - ai*(-s1) - aj*(-s2) - ak*(-s3);
+        q1 = ai*s0 + 0.*(-s1) - ak*(-s2) + aj*(-s3);
+        q2 = aj*s0 + ak*(-s1) + 0.*(-s2) - ai*(-s3);
+        q3 = ak*s0 - aj*(-s1) + ai*(-s2) + 0.*(-s3);
+
+        ax = s1*q0 + s0*q1 - s3*q2 + s2*q3;
+        ay = s2*q0 + s3*q1 + s0*q2 - s1*q3;
+        az = s3*q0 - s2*q1 + s1*q2 + s0*q3;
 
         /* integrate acceleration one time to get velocity 
             in absolute coordinates */
@@ -348,19 +377,26 @@ int calculate (const char *fname)
         vy = vy_ + (ay * dt);
         vz = vz_ + (az * dt);
         
-        /* correct velocity: still looks like a magic */
+        /* correct velocity: still looks like a magic 
+            At this point aur assuptions about plane movement and
+            hard link between orientation and velocity are take place. */
+        double v;
         v = sqrt (vx * vx + vy * vy);
-
-        vx = v * cos (u);
-        vy = v * sin (u);
         
+        vx = s1*s1 + s0*s0 - s3*s3 - s2*s2;
+        vy = 2. * (s2*s1 + s3*s0);
+        vz = 2. * (s3*s1 - s2*s0);
+
+        double V;
+        V = sqrt (vx*vx + vy*vy);
+        vx = v * vx / V;
+        vy = v * vy / V;
+      
         /* integrate acceleration two times to get absolute coordinates */
         rx  = rx_ + vx_ * dt + 0.5 * ax * dt * dt;
         ry  = ry_ + vy_ * dt + 0.5 * ay * dt * dt;
 
         /* prepare variables for the next iteration */
-        u_ = u;
-
         rx_ = rx;
         ry_ = ry;
         rz_ = rz;
