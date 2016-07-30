@@ -355,11 +355,10 @@ int calculate (const char *fname)
         s2 = s2 / s;
         s3 = s3 / s;*/
 
-        /* convert acceleration from local coordinates to global */
-
-        /* quaternion version: 
-            augmented acceleration is (0, ai, aj, ak)
-            conjugate of s is (s0, -s1, -s2, -s3) */
+        /* convert acceleration from local coordinates to global;
+            augmented acceleration is (0, ai, aj, ak);
+            conjugate of s is (s0, -s1, -s2, -s3);
+            a_xyz = s * a_ijk * s_conj */
         double q0, q1, q2, q3;
         q0 = 0.*s0 - ai*(-s1) - aj*(-s2) - ak*(-s3);
         q1 = ai*s0 + 0.*(-s1) - ak*(-s2) + aj*(-s3);
@@ -371,6 +370,7 @@ int calculate (const char *fname)
         az = s3*q0 - s2*q1 + s1*q2 + s0*q3;
 
         /* TODO: place mechanical noise filter here */
+        /* some sort of: */
         if (fabs(ax) < 0.08)
             ax = 0.;
         if (fabs(ay) < 0.08)
@@ -386,7 +386,8 @@ int calculate (const char *fname)
         
         /* correct velocity: still looks like a magic 
             At this point aur assuptions about plane movement and
-            hard link between orientation and velocity are take place. */
+            hard link between orientation and velocity are take place. 
+            ----------------------------------------------------------------- */
         double v;
         v = sqrt (vx * vx + vy * vy);
 
@@ -400,10 +401,13 @@ int calculate (const char *fname)
         V = sqrt (vx*vx + vy*vy);
         vx = v * vx / V;
         vy = v * vy / V;
+        /* ---------------------------------------------------------------------
+            end of assumptions-depended code */
       
         /* integrate acceleration two times to get absolute coordinates */
         rx  = rx_ + vx_ * dt + 0.5 * ax * dt * dt;
         ry  = ry_ + vy_ * dt + 0.5 * ay * dt * dt;
+        rz  = rz_ + vz_ * dt + 0.5 * az * dt * dt;
 
         /* prepare variables for the next iteration */
         rx_ = rx;
@@ -419,7 +423,7 @@ int calculate (const char *fname)
         s2_ = s2;
         s3_ = s3;
 
-        fprintf (fout, "%lf %lf %lf  %lf %lf %lf\n", rx, ry, v, ax, ay, az);
+        fprintf (fout, "%lf %lf %lf  %lf %lf %lf\n", rx, ry, rz, v, ax, ay, az);
         
         smpl_cnt++;
     }
