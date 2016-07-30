@@ -43,33 +43,33 @@ Look in `bcm2708-rpi-b.dts` for reference.
 
 On the host computer: go to `./drv`, add you cross compiler to Makefile.  
 Run  
-```sh 
+``` 
 $ make
 ```
 Copy fast-mpu6050.ko to `/lib/modules/<your kernel release>/extra` on your board.   
 
 On your board:  
 Run  
-```sh
+```
 # depmod
 ```
 Reboot.  
 After each reboot of your board you should run  
-```sh
+```
 # ./mknod.sh
 ```
 in order to create `/dev/mpu6050` node.  
 
 On the host: go to `./nav`, add you cross compiler to Makefile.  
 Run  
-```sh
+```
 $ make
 ```
 Copy nav to your board.  
 
 On the host:  
 Run  
-```sh
+```
 $ make PLATFORM=THIS
 ```
 This makes the host version of nav. Use it to calculate trajectory.  
@@ -77,7 +77,7 @@ Warning: this will rewrite cross-version of nav binary you've
 compiled in previous step.  
 
 ### How to run program:
-see `./nav/README`
+see `./nav/README.md`
 
 ---
 ![test6-e0-e1-diff](./nav/img/test6-e0-e1-diff.png)
