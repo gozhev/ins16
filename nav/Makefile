@@ -5,7 +5,7 @@ CFLAGS := -lm
 
 REMOTE_HST := 192.168.0.3
 REMOTE_USR := root
-REMOTE_DIR := /root/dvlp/nav
+REMOTE_DIR := /root
 
 ifneq ($(PLATFORM),THIS)
 

@@ -1,19 +1,16 @@
 (yet another prototype of)  
 ## Inertial Navigation System
 
-**Version:** 2.0 2016-07-29
+**Version:** 2.1 2016-08-01
 
 ### Release notes:
-This version fully supports quaternion 3D calculations.  
-However, due to the complicated process of calibrations needed,  
-this version has no demonstrative advantages in results over  
-the previous plane version.  
+This version fully supports quaternion 3D calculations. 
 
-If you still want to see something new, look at `nav/img/test6-e0-e1-diff.png`   
-(or see image at the and of this page). If I manually multiply projection  
-of g to axis k with some coefficient from zero to one,   
-I will be able to correct trajectory. But, for every test I need   
-to pick up this number exclusively.  
+Added software low-pass filter.
+
+Some how calculated accelerometer hardware zero offsets.
+
+Images of new test placed at `/nav/img`.   
 
 There is still lack of any smart filters.  
 
@@ -80,4 +77,4 @@ compiled in previous step.
 see `./nav/README.md`
 
 ---
-![test6-e0-e1-diff](./nav/img/test6-e0-e1-diff.png)
+![test_01](./nav/img/test_01.png)

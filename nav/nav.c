@@ -10,14 +10,17 @@
 #include <math.h>
 #include "sample.h"
 
-#define RAW_DATA_CHUNK_SIZE 22 /* byte(s) */
-#define SAMPLING_FREQUENCY 1000 /* Hz */
 #define CHRDEV "/dev/mpu6050"
+#define RAW_DATA_CHUNK_SIZE 22 /* bytes */
+
+#define SAMPLING_FREQUENCY 1000 /* Hz */
 
 #define PHYS_G 9.80665 /* acceleration of gravity in meters per second squared */
 /* Full Scale Ranges of Sensors */
-#define ACCEL_FS 4.0 /* acceleration(s) of gravity */
-#define GYRO_FS 1000.0 /* degrees per sec */
+#define ACCEL_FS 2 /* acceleration(s) of gravity */
+#define GYRO_FS 500.0 /* degrees per sec */
+/* software low-pass filter frame size */
+#define SW_LOWPASS_SMPLCNT 400 /* samples */
 
 /* convert raw values to SI */
 #define A_RAW_TO_SI(a) ( PHYS_G * ACCEL_FS * ((double)a / 32768.0) )
@@ -130,9 +133,9 @@ int calculate (const char *fname)
     int rc;
     int fd_in;
     FILE *fout;
+    
+    int smpl_cnt, clbr_cnt;
     struct sample_t sample;
-    size_t smpl_cnt;
-    int clbr_cnt;
 
     fd_in = open (fname, O_RDONLY);
     if (fd_in < 0) {
@@ -157,11 +160,21 @@ int calculate (const char *fname)
         s - orientation quaternion
         
         *x - projection to x
-        z_* - zero-point offset
+        zo_* - zero-point offset
+        av_* - average value
         *_ - previous value
         *0..*3 - quaternion coordinates */
     double ai, aj, ak;
     double wi, wj, wk;
+    
+    /* software low-pass filter */
+    double lp_Ai[SW_LOWPASS_SMPLCNT] = {0.};
+    double lp_Aj[SW_LOWPASS_SMPLCNT] = {0.};
+    double lp_Ak[SW_LOWPASS_SMPLCNT] = {0.};
+    int lp_pos = 0;
+    double lp_ai = 0.;
+    double lp_aj = 0.;
+    double lp_ak = 0.;
     
     double ax, ay, az;
     
@@ -184,17 +197,26 @@ int calculate (const char *fname)
     double s0, s1, s2, s3;
     double s0_, s1_, s2_, s3_;
 
+    double q0, q1, q2, q3;
+    
     double dt;
+   
+    double av_ai, av_aj, av_ak;
+    double zo_ai, zo_aj, zo_ak;
+    double zo_wi, zo_wj, zo_wk;
+
+    av_ai = av_aj = av_ak = 0.;
+    zo_wi = zo_wj = zo_wk = 0.;
     
-    double z_ai, z_aj, z_ak;
-    double z_wi, z_wj, z_wk;
-    
-    z_ai = z_aj = z_ak = 0;
-    z_wi = z_wj = z_wk = 0;
+    /* hardware zero offset
+        don't ask me how i get this, it's for debugging only */
+    zo_ai = 0.4528;
+    zo_aj = -0.14464;
+    zo_ak = 0.;
 
     smpl_cnt = 0;
     clbr_cnt = calibration_time * SAMPLING_FREQUENCY;
-
+    
     /* calibration loop */
     while (smpl_cnt < clbr_cnt) {
         rc = read (fd_in, &sample, sizeof (struct sample_t));
@@ -225,23 +247,31 @@ int calculate (const char *fname)
             180 degrees around the axe which is orthogonal to acceleration
             of gravity during the calibration process. */
 
-        z_ai += ai;
-        z_aj += aj;
-        z_ak += ak;
-        z_wi += wi;
-        z_wj += wj;
-        z_wk += wk;
-        
+        av_ai += ai;
+        av_aj += aj;
+        av_ak += ak;
+        zo_wi += wi;
+        zo_wj += wj;
+        zo_wk += wk;
+
         smpl_cnt++;
     }
+
+    av_ai /= smpl_cnt;
+    av_aj /= smpl_cnt;
+    av_ak /= smpl_cnt;
+    zo_wi /= smpl_cnt;
+    zo_wj /= smpl_cnt;
+    zo_wk /= smpl_cnt;
+
+    av_ai -= zo_ai;
+    av_aj -= zo_aj;
+    av_ak -= zo_ak;
     
-    z_ai /= smpl_cnt;
-    z_aj /= smpl_cnt;
-    z_ak /= smpl_cnt;
-    z_wi /= smpl_cnt;
-    z_wj /= smpl_cnt;
-    z_wk /= smpl_cnt;
-        
+    fprintf (stdout, "Averaging: %lf %lf %lf N: %lf\n", 
+            av_ai, av_aj, av_ak, 
+            sqrt (av_ai*av_ai + av_aj*av_aj + av_ak*av_ak));
+
     /* Okay, suppose all of calibrations are done.
         First we need to determine global axes x, y and z.
 
@@ -261,44 +291,35 @@ int calculate (const char *fname)
         rotating vectors i and j with initial quaternion s0..3.
 
         Let's calculate that. */
-    
-    double zi, zj, zk;
-    double g;
+    double av_g;
 
-    g = sqrt ((z_ai * z_ai) + (z_aj * z_aj) + (z_ak * z_ak));
-    /* g = PHYS_G; */
+    /* in the theory this should be equal to acceleration of gravity */
+    av_g = sqrt ((av_ai * av_ai) + (av_aj * av_aj) + (av_ak * av_ak));
+    av_ai /= av_g;
+    av_aj /= av_g;
+    av_ak /= av_g;
 
-    zi = z_ai / g;
-    zj = z_aj / g;
-    zk = z_ak / g;
-    
-    /* k has the coordinates 0, 0, 1 in the local system,
-        z has the coordinates zi, zj, zk in the local system.
-        To get transformation quaternion from ijk to xyz we need to
-        construct rotation quaternion from z to k. See ref/math directory
-        for more details. */
-    /* k dot z */
-    /*s0_ = zk; 
-    s0_ = sqrt (2. + 2. * s0_);*/
-
-    /* z cross k */
-    /*s1_ = zj;  
-    s2_ = -zi;
-    s3_ = 0.;
-
-    s1_ = (1. / s0_) * s1_;
-    s2_ = (1. / s0_) * s2_;
-    s3_ = (1. / s0_) * s3_;
-
-    s0_ = 0.5 * s0_;*/
-
+    /* Identity quaternion.
+        this is default value, it only true if our sensor is set absolutly
+        horizontally */
     s0_ = 1.;
     s1_ = s2_ = s3_ = 0.;
-    /* quaternion is prepared */
+
+    /* let's find a quaternion corresponding to our real system
+        k has the coordinates 0, 0, 1 in the local system,
+        z has the coordinates zi, zj, zk in the local system.
+        To get transformation quaternion from ijk to xyz we need to
+        construct rotation quaternion from z to k.
+        NOTE: See ref/math directory for more details. */
+    s0_ = sqrt (2. + (2. * av_ak));
+    s1_ = av_aj / s0_;
+    s2_ = -av_ai / s0_;
+    s3_ = 0.;
+    s0_ *= 0.5;
 
     vx_ = vy_ = vz_ = 0.;
     rx_ = ry_ = rz_ = 0.;
-    
+
     dt = 1. / SAMPLING_FREQUENCY;
 
     while (1) {
@@ -318,31 +339,46 @@ int calculate (const char *fname)
         wi = W_RAW_TO_SI (sample.gx);
         wj = W_RAW_TO_SI (sample.gy);
         wk = W_RAW_TO_SI (sample.gz);
-        
-        ai = ai - z_ai;
-        aj = aj - z_aj;
-        ak = ak - z_ak; /*ak*0.35;*/
 
-        wi -= z_wi;
-        wj -= z_wj;
-        wk -= z_wk;
+        /* apply zero offset */
+        wi -= zo_wi;
+        wj -= zo_wj;
+        wk -= zo_wk;
+        ai -= zo_ai;
+        aj -= zo_aj;
+        ak -= zo_ak;
+
+        /* software low-pass filter */
+        ai /= SW_LOWPASS_SMPLCNT;
+        aj /= SW_LOWPASS_SMPLCNT;
+        ak /= SW_LOWPASS_SMPLCNT;
+        lp_ai = lp_ai - lp_Ai[lp_pos] + ai;
+        lp_aj = lp_aj - lp_Aj[lp_pos] + aj;
+        lp_ak = lp_ak - lp_Ak[lp_pos] + ak;
+        lp_Ai[lp_pos] = ai;
+        lp_Aj[lp_pos] = aj;
+        lp_Ak[lp_pos] = ak;
+        lp_pos++;
+        if (lp_pos == SW_LOWPASS_SMPLCNT) lp_pos = 0;
+        ai = lp_ai;
+        aj = lp_aj;
+        ak = lp_ak;
 
         /* don't forget to run no-motion tests */
         
-        /* integrate angular velocity to get new orientation quaternion */
-        double p0, p1, p2, p3;
+        /* integrate angular velocity to get the new orientation quaternion */
         double w;
 
         w = sqrt (wi*wi + wj*wj + wk*wk);
-        p0 = cos (w * dt * 0.5);
-        p1 = sin (w * dt * 0.5) * wi * (1. / w);
-        p2 = sin (w * dt * 0.5) * wj * (1. / w);
-        p3 = sin (w * dt * 0.5) * wk * (1. / w);
+        q0 = cos (w * dt * 0.5);
+        q1 = sin (w * dt * 0.5) * wi * (1. / w);
+        q2 = sin (w * dt * 0.5) * wj * (1. / w);
+        q3 = sin (w * dt * 0.5) * wk * (1. / w);
 
-        s0 = s0_*p0 - s1_*p1 - s2_*p2 - s3_*p3;
-        s1 = s1_*p0 + s0_*p1 - s3_*p2 + s2_*p3;
-        s2 = s2_*p0 + s3_*p1 + s0_*p2 - s1_*p3;
-        s3 = s3_*p0 - s2_*p1 + s1_*p2 + s0_*p3;
+        s0 = s0_*q0 - s1_*q1 - s2_*q2 - s3_*q3;
+        s1 = s1_*q0 + s0_*q1 - s3_*q2 + s2_*q3;
+        s2 = s2_*q0 + s3_*q1 + s0_*q2 - s1_*q3;
+        s3 = s3_*q0 - s2_*q1 + s1_*q2 + s0_*q3;
 
         /*s0 = s0_ + 0.5 * dt * (- (s1_ * wi) - (s2_ * wj) - (s3_ * wk));
         s1 = s1_ + 0.5 * dt * (+ (s0_ * wi) - (s3_ * wj) + (s2_ * wk));
@@ -359,7 +395,6 @@ int calculate (const char *fname)
             augmented acceleration is (0, ai, aj, ak);
             conjugate of s is (s0, -s1, -s2, -s3);
             a_xyz = s * a_ijk * s_conj */
-        double q0, q1, q2, q3;
         q0 = 0.*s0 - ai*(-s1) - aj*(-s2) - ak*(-s3);
         q1 = ai*s0 + 0.*(-s1) - ak*(-s2) + aj*(-s3);
         q2 = aj*s0 + ak*(-s1) + 0.*(-s2) - ai*(-s3);
@@ -371,36 +406,38 @@ int calculate (const char *fname)
 
         /* TODO: place mechanical noise filter here */
         /* some sort of: */
-        if (fabs(ax) < 0.08)
+/*        if (fabs(ax) < 0.08)
             ax = 0.;
         if (fabs(ay) < 0.08)
             ay = 0.;
         if (fabs(az) < 0.08)
             az = 0.;
-
+*/
         /* integrate acceleration one time to get velocity 
             in absolute coordinates */
         vx = vx_ + (ax * dt);
         vy = vy_ + (ay * dt);
         vz = vz_ + (az * dt);
         
-        /* correct velocity: still looks like a magic 
-            At this point aur assuptions about plane movement and
+        /* correct velocity
+            At this point our assuptions about plane movement and
             hard link between orientation and velocity are take place. 
             ----------------------------------------------------------------- */
         double v;
-        v = sqrt (vx * vx + vy * vy);
+        v = sqrt ((vx * vx) + (vy * vy));
 
-        if (v < 0.001) v = 0.;
+//        if (v < 0.001) v = 0.;
         
+        /* find coordinates of vector i=(1,0,0) in system xyz */
         vx = s1*s1 + s0*s0 - s3*s3 - s2*s2;
         vy = 2. * (s2*s1 + s3*s0);
         vz = 2. * (s3*s1 - s2*s0);
 
-        double V;
-        V = sqrt (vx*vx + vy*vy);
-        vx = v * vx / V;
-        vy = v * vy / V;
+        /* normalize ixy */
+        double ixy;
+        ixy = sqrt ((vx * vx) + (vy * vy));
+        vx = v * vx / ixy;
+        vy = v * vy / ixy;
         /* ---------------------------------------------------------------------
             end of assumptions-depended code */
       
@@ -423,7 +460,11 @@ int calculate (const char *fname)
         s2_ = s2;
         s3_ = s3;
 
-        fprintf (fout, "%lf %lf %lf  %lf %lf %lf\n", rx, ry, rz, v, ax, ay, az);
+        fprintf (fout, "%lf  %lf %lf %lf  %lf %lf %lf  %lf %lf %lf\n", 
+                (double)smpl_cnt / SAMPLING_FREQUENCY,
+                rx, ry, rz,
+                vx, vy, vz,
+                ax, ay, az);
         
         smpl_cnt++;
     }
@@ -454,7 +495,7 @@ int collect_samples (const char *fname, int seconds)
         return -errno;
     }
     
-    fd_out = open (fname, O_WRONLY | O_CREAT);
+    fd_out = open (fname, O_WRONLY | O_CREAT, 0666);
    
     if (fd_out < 0) {
         fprintf (stderr, "Failed to open %s for writing.\n", fname);

@@ -28,9 +28,12 @@ $ ./nav -f test001 -a 10
 This write trajectory coordinates to out.dat file in text format.  
 First 10 seconds of samples are used for calibration.
 
-### Plotting in 3D:
-Run on host:
+### Plotting:
+I recommend to use gnuplot for plotting.
+To plot three-dimensional curve run:
 ```
 $ gnuplot plot.p -
 ```
+You can select zoom area by clicking right mouse button.
+You can rotate plot using left mouse button.
 
