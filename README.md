@@ -1,14 +1,19 @@
 (yet another prototype of)  
 ## Inertial Navigation System
 
-**Version:** 2.1 2016-08-01
+**Version:** 2.2 2016-08-05
 
 ### Release notes:
-This version fully supports quaternion 3D calculations. 
+This version fully supports quaternion 3D calculations.  
 
-Added software low-pass filter.
+[2.2]  
+Math processing functions exported into separate file `engine.c`.  
+Calibration offsets & factors calculated with more precision  
+*exclusively for this chip*.
 
-Some how calculated accelerometer hardware zero offsets.
+[2.1]  
+Added software low-pass filter.  
+Some how calculated accelerometer hardware zero offsets.  
 
 Images of new test placed at `/nav/img`.   
 
@@ -60,14 +65,14 @@ in order to create `/dev/mpu6050` node.
 On the host: go to `./nav`, add you cross compiler to Makefile.  
 Run  
 ```
-$ make
+$ make PLATFORM=board
 ```
 Copy nav to your board.  
 
 On the host:  
 Run  
 ```
-$ make PLATFORM=THIS
+$ make
 ```
 This makes the host version of nav. Use it to calculate trajectory.  
 Warning: this will rewrite cross-version of nav binary you've  

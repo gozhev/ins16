@@ -1,5 +1,5 @@
 TARGET := nav
-CSRCS := nav.c 
+CSRCS := nav.c engine.c
 
 CFLAGS := -lm
 
@@ -7,7 +7,7 @@ REMOTE_HST := 192.168.0.3
 REMOTE_USR := root
 REMOTE_DIR := /root
 
-ifneq ($(PLATFORM),THIS)
+ifeq ($(PLATFORM),board)
 
 CROSS := /home/student/dvlp/raspberrypi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-
 

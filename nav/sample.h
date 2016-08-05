@@ -3,7 +3,7 @@
 
 struct sample_t {
     int16_t ax, ay, az;
-    int16_t gx, gy, gz;
+    int16_t wx, wy, wz;
     int64_t tstmp;
 } __attribute__((__packed__));
 
