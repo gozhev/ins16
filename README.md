@@ -6,14 +6,27 @@
 ### Release notes:
 This version fully supports quaternion 3D calculations.  
 
-[2.2]  
-Math processing functions exported into separate file `engine.c`.  
-Calibration offsets & factors calculated with more precision  
-*exclusively for this chip*.
-
-[2.1]  
-Added software low-pass filter.  
-Some how calculated accelerometer hardware zero offsets.  
+<table>
+<tr align=center>
+<td><b> Version </b></td>
+<td><b> Notes </b></td>
+</tr>
+<tr>
+<td align=center valign=top> 2.2 </td>
+<td> Math processing functions exported into separate file `engine.c`.<br />
+Calibration offsets & factors calculated with more precision<br />
+<i>exclusively for my chip.</i></td>
+</tr>
+<tr>
+<td align=center valign=top> 2.1 </td>
+<td> Added software low-pass filter.<br />
+Some how calculated accelerometer hardware zero offsets. </td>
+</tr>
+<tr>
+<td align=center valign=top> 2.0 </td>
+<td> Introduced quaternion-based 3D rotation. </td>
+</tr>
+</table>
 
 Images of new test placed at `/nav/img`.   
 
